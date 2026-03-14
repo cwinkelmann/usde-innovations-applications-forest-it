@@ -137,8 +137,8 @@ def _run_inference(Image, Path, imagenet_labels, model, pd, torch, transform):
 
     with torch.no_grad():
         for crop_path in crop_files:
-            img = Image.open(crop_path).convert("RGB")
-            tensor = transform(img).unsqueeze(0)  # (1, C, H, W)
+            _img = Image.open(crop_path).convert("RGB")
+            tensor = transform(_img).unsqueeze(0)  # (1, C, H, W)
 
             logits = model(tensor)
             probs = torch.softmax(logits, dim=1)[0]
@@ -158,7 +158,7 @@ def _run_inference(Image, Path, imagenet_labels, model, pd, torch, transform):
 
     results_df = pd.DataFrame(records)
     print(results_df[["crop", "top1_label", "top1_conf"]].to_string(index=False))
-    return CROPS_DIR, TOP_K, crop_files, crop_path, img, logits, probs, records, results_df, tensor, top_indices, top_probs
+    return CROPS_DIR, TOP_K, crop_files, records, results_df
 
 
 @app.cell
@@ -174,27 +174,27 @@ def _step5(mo):
 @app.cell
 def _visualise(Image, crop_files, plt, results_df):
     N_SHOW = min(10, len(crop_files))
-    fig, axes = plt.subplots(2, N_SHOW // 2, figsize=(N_SHOW * 2, 6))
-    axes = axes.flatten()
+    _fig, _axes = plt.subplots(2, N_SHOW // 2, figsize=(N_SHOW * 2, 6))
+    _axes = _axes.flatten()
 
-    for i, (ax, row) in enumerate(zip(axes, results_df.head(N_SHOW).itertuples())):
-        img = Image.open(Path("../data/camera_trap_crops") / row.crop)
-        ax.imshow(img)
-        colour = "green" if row.top1_conf > 0.6 else "orange" if row.top1_conf > 0.3 else "red"
-        ax.set_title(
-            f"{row.top1_label}\n{row.top1_conf:.2%}",
+    for _i, (_ax, _row) in enumerate(zip(_axes, results_df.head(N_SHOW).itertuples())):
+        _img = Image.open(Path("../data/camera_trap_crops") / _row.crop)
+        _ax.imshow(_img)
+        _colour = "green" if _row.top1_conf > 0.6 else "orange" if _row.top1_conf > 0.3 else "red"
+        _ax.set_title(
+            f"{_row.top1_label}\n{_row.top1_conf:.2%}",
             fontsize=8,
-            color=colour,
+            color=_colour,
         )
-        ax.axis("off")
+        _ax.axis("off")
 
-    for ax in axes[N_SHOW:]:
-        ax.axis("off")
+    for _ax in _axes[N_SHOW:]:
+        _ax.axis("off")
 
     plt.suptitle("EfficientNet top-1 predictions on animal crops", fontsize=12)
     plt.tight_layout()
     plt.show()
-    return N_SHOW, ax, axes, colour, fig, i, img, row
+    return
 
 
 @app.cell

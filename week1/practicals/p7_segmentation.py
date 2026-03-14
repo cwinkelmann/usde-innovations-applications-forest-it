@@ -94,12 +94,12 @@ def _step2(mo):
 
 @app.cell
 def _point_segmentation(Image, Path, np, plt, predictor):
-    IMAGE_PATH = Path("../data/sample_tile.jpg")
+    _IMAGE_PATH = Path("../data/sample_tile.jpg")
 
-    if predictor is None or not IMAGE_PATH.exists():
+    if predictor is None or not _IMAGE_PATH.exists():
         print("SAM not loaded or image not found. Skipping.")
     else:
-        image = np.array(Image.open(IMAGE_PATH).convert("RGB"))
+        image = np.array(Image.open(_IMAGE_PATH).convert("RGB"))
         predictor.set_image(image)
 
         # Prompt: click on a point of interest (x, y in pixel coords)
@@ -113,23 +113,23 @@ def _point_segmentation(Image, Path, np, plt, predictor):
         )
 
         # Plot the three candidate masks
-        fig, axes = plt.subplots(1, 4, figsize=(16, 4))
+        _fig, _axes = plt.subplots(1, 4, figsize=(16, 4))
 
-        axes[0].imshow(image)
-        axes[0].plot(*INPUT_POINT[0], "r*", markersize=12)
-        axes[0].set_title("Input image + prompt")
-        axes[0].axis("off")
+        _axes[0].imshow(image)
+        _axes[0].plot(*INPUT_POINT[0], "r*", markersize=12)
+        _axes[0].set_title("Input image + prompt")
+        _axes[0].axis("off")
 
         for i, (mask, score) in enumerate(zip(masks, scores)):
-            axes[i + 1].imshow(image)
-            axes[i + 1].imshow(mask, alpha=0.5, cmap="Reds")
-            axes[i + 1].set_title(f"Mask {i + 1}  (score={score:.3f})")
-            axes[i + 1].axis("off")
+            _axes[i + 1].imshow(image)
+            _axes[i + 1].imshow(mask, alpha=0.5, cmap="Reds")
+            _axes[i + 1].set_title(f"Mask {i + 1}  (score={score:.3f})")
+            _axes[i + 1].axis("off")
 
         plt.suptitle("SAM point-prompted segmentation — three candidate masks", fontsize=12)
         plt.tight_layout()
         plt.show()
-    return IMAGE_PATH, INPUT_LABEL, INPUT_POINT, axes, fig, i, image, logits, mask, masks, score, scores
+    return INPUT_LABEL, INPUT_POINT, image, logits, mask, masks, score, scores
 
 
 @app.cell
@@ -149,20 +149,20 @@ def _step3(mo):
 def _semantic_seg(Image, Path, np, plt):
     from sklearn.ensemble import RandomForestClassifier
 
-    IMAGE_PATH = Path("../data/sample_tile.jpg")
+    _IMAGE_PATH2 = Path("../data/sample_tile.jpg")
     LABELS_PATH = Path("../data/sample_tile_labels.npy")  # (H, W) uint8 mask with class indices
 
     CLASS_NAMES = ["rock", "vegetation", "sand", "water", "iguana"]
     COLOURS = ["grey", "green", "yellow", "blue", "red"]
 
-    if not IMAGE_PATH.exists() or not LABELS_PATH.exists():
+    if not _IMAGE_PATH2.exists() or not LABELS_PATH.exists():
         print("Image or labels not found — using synthetic demo data.")
         H, W = 256, 256
         rng = np.random.default_rng(42)
         image_arr = rng.integers(0, 255, (H, W, 3), dtype=np.uint8)
         labels_arr = rng.integers(0, len(CLASS_NAMES), (H, W), dtype=np.uint8)
     else:
-        image_arr = np.array(Image.open(IMAGE_PATH).convert("RGB"))
+        image_arr = np.array(Image.open(_IMAGE_PATH2).convert("RGB"))
         labels_arr = np.load(str(LABELS_PATH))
         H, W = image_arr.shape[:2]
 
@@ -191,22 +191,22 @@ def _semantic_seg(Image, Path, np, plt):
     import matplotlib.colors as mcolors
     cmap = mcolors.ListedColormap(COLOURS[:len(CLASS_NAMES)])
 
-    fig, axes = plt.subplots(1, 3, figsize=(14, 5))
-    axes[0].imshow(image_arr)
-    axes[0].set_title("Input tile")
-    axes[0].axis("off")
+    _fig, _axes = plt.subplots(1, 3, figsize=(14, 5))
+    _axes[0].imshow(image_arr)
+    _axes[0].set_title("Input tile")
+    _axes[0].axis("off")
 
-    axes[1].imshow(labels_arr, cmap=cmap, vmin=0, vmax=len(CLASS_NAMES) - 1)
-    axes[1].set_title("Ground truth labels")
-    axes[1].axis("off")
+    _axes[1].imshow(labels_arr, cmap=cmap, vmin=0, vmax=len(CLASS_NAMES) - 1)
+    _axes[1].set_title("Ground truth labels")
+    _axes[1].axis("off")
 
-    im = axes[2].imshow(pred_map, cmap=cmap, vmin=0, vmax=len(CLASS_NAMES) - 1)
-    axes[2].set_title(f"Predicted land cover (acc={acc:.1%})")
-    axes[2].axis("off")
+    im = _axes[2].imshow(pred_map, cmap=cmap, vmin=0, vmax=len(CLASS_NAMES) - 1)
+    _axes[2].set_title(f"Predicted land cover (acc={acc:.1%})")
+    _axes[2].axis("off")
 
     from matplotlib.patches import Patch
     legend_elements = [Patch(facecolor=c, label=n) for c, n in zip(COLOURS, CLASS_NAMES)]
-    fig.legend(handles=legend_elements, loc="lower center", ncol=len(CLASS_NAMES), fontsize=9)
+    _fig.legend(handles=legend_elements, loc="lower center", ncol=len(CLASS_NAMES), fontsize=9)
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.12)

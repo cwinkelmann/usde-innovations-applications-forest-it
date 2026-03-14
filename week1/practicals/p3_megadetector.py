@@ -78,37 +78,37 @@ def _step2(mo):
 
 @app.cell
 def _single_image(Image, ImageDraw, Path, detector, plt):
-    IMAGE_PATH = Path("../data/camera_trap/sample_01.jpg")
-    CONF_THRESHOLD = 0.2  # detections below this are ignored
+    _IMAGE_PATH = Path("../data/camera_trap/sample_01.jpg")
+    _CONF_THRESHOLD = 0.2  # detections below this are ignored
 
-    result = detector.single_image_detection(str(IMAGE_PATH), conf_thres=CONF_THRESHOLD)
+    _result = detector.single_image_detection(str(_IMAGE_PATH), conf_thres=_CONF_THRESHOLD)
 
-    print(f"Detections found: {len(result['detections'])}")
-    for det in result["detections"]:
-        label = {1: "animal", 2: "person", 3: "vehicle"}.get(det["category"], "?")
-        print(f"  {label:8s}  conf={det['conf']:.3f}  bbox={[round(v, 3) for v in det['bbox']]}")
+    print(f"Detections found: {len(_result['detections'])}")
+    for _det in _result["detections"]:
+        _label = {1: "animal", 2: "person", 3: "vehicle"}.get(_det["category"], "?")
+        print(f"  {_label:8s}  conf={_det['conf']:.3f}  bbox={[round(v, 3) for v in _det['bbox']]}")
 
     # Draw bounding boxes
-    img = Image.open(IMAGE_PATH).convert("RGB")
-    draw = ImageDraw.Draw(img)
-    W, H = img.size
-    COLOURS = {1: "lime", 2: "red", 3: "yellow"}
+    _img = Image.open(_IMAGE_PATH).convert("RGB")
+    _draw = ImageDraw.Draw(_img)
+    _W, _H = _img.size
+    _COLOURS = {1: "lime", 2: "red", 3: "yellow"}
 
-    for det in result["detections"]:
-        x, y, bw, bh = det["bbox"]
-        x1, y1 = int(x * W), int(y * H)
-        x2, y2 = int((x + bw) * W), int((y + bh) * H)
-        draw.rectangle([x1, y1, x2, y2], outline=COLOURS.get(det["category"], "white"), width=2)
-        label = {1: "animal", 2: "person", 3: "vehicle"}.get(det["category"], "?")
-        draw.text((x1, max(0, y1 - 14)), f"{label} {det['conf']:.2f}", fill="white")
+    for _det in _result["detections"]:
+        _x, _y, _bw, _bh = _det["bbox"]
+        _x1, _y1 = int(_x * _W), int(_y * _H)
+        _x2, _y2 = int((_x + _bw) * _W), int((_y + _bh) * _H)
+        _draw.rectangle([_x1, _y1, _x2, _y2], outline=_COLOURS.get(_det["category"], "white"), width=2)
+        _label = {1: "animal", 2: "person", 3: "vehicle"}.get(_det["category"], "?")
+        _draw.text((_x1, max(0, _y1 - 14)), f"{_label} {_det['conf']:.2f}", fill="white")
 
-    fig, ax = plt.subplots(figsize=(10, 7))
-    ax.imshow(img)
-    ax.set_title(f"MegaDetector — {IMAGE_PATH.name}  (threshold = {CONF_THRESHOLD})")
-    ax.axis("off")
+    _fig, _ax = plt.subplots(figsize=(10, 7))
+    _ax.imshow(_img)
+    _ax.set_title(f"MegaDetector — {_IMAGE_PATH.name}  (threshold = {_CONF_THRESHOLD})")
+    _ax.axis("off")
     plt.tight_layout()
-    plt.show()
-    return CONF_THRESHOLD, IMAGE_PATH, W, H, ax, bh, bw, det, draw, fig, img, label, result, x, x1, x2, y, y1, y2
+    plt.gca()
+    return
 
 
 @app.cell
@@ -124,24 +124,24 @@ def _step3(mo):
 
 @app.cell
 def _batch(Path, detector, pd):
-    IMAGE_DIR = Path("../data/camera_trap")
-    CONF_THRESHOLD = 0.2
+    _IMAGE_DIR = Path("../data/camera_trap")
+    _CONF_THRESHOLD = 0.2
 
-    image_paths = sorted(IMAGE_DIR.glob("*.jpg"))
+    image_paths = sorted(_IMAGE_DIR.glob("*.jpg"))
     records = []
 
-    for img_path in image_paths:
-        result = detector.single_image_detection(str(img_path), conf_thres=CONF_THRESHOLD)
-        for det in result["detections"]:
-            category_name = {1: "animal", 2: "person", 3: "vehicle"}.get(det["category"], "unknown")
+    for _img_path in image_paths:
+        _result = detector.single_image_detection(str(_img_path), conf_thres=_CONF_THRESHOLD)
+        for _det in _result["detections"]:
+            _category_name = {1: "animal", 2: "person", 3: "vehicle"}.get(_det["category"], "unknown")
             records.append({
-                "filename": img_path.name,
-                "category": category_name,
-                "confidence": round(det["conf"], 4),
-                "bbox_x": round(det["bbox"][0], 4),
-                "bbox_y": round(det["bbox"][1], 4),
-                "bbox_w": round(det["bbox"][2], 4),
-                "bbox_h": round(det["bbox"][3], 4),
+                "filename": _img_path.name,
+                "category": _category_name,
+                "confidence": round(_det["conf"], 4),
+                "bbox_x": round(_det["bbox"][0], 4),
+                "bbox_y": round(_det["bbox"][1], 4),
+                "bbox_w": round(_det["bbox"][2], 4),
+                "bbox_h": round(_det["bbox"][3], 4),
             })
 
     detections_df = pd.DataFrame(records)
@@ -151,7 +151,7 @@ def _batch(Path, detector, pd):
     print(detections_df["category"].value_counts().to_string())
     print(f"\nConfidence distribution:")
     print(detections_df.groupby("category")["confidence"].describe().round(3).to_string())
-    return CONF_THRESHOLD, IMAGE_DIR, category_name, det, detections_df, image_paths, img_path, records, result
+    return detections_df, image_paths, records
 
 
 @app.cell
@@ -165,8 +165,7 @@ def _step4(mo):
 
 
 @app.cell
-def _extract_crops(Path, detections_df):
-    from PIL import Image
+def _extract_crops(Image, Path, detections_df):
 
     CROPS_DIR = Path("../data/camera_trap_crops")
     CROPS_DIR.mkdir(exist_ok=True)
@@ -175,24 +174,24 @@ def _extract_crops(Path, detections_df):
     crop_paths = []
 
     for _, row in animal_detections.iterrows():
-        img_path = Path("../data/camera_trap") / row["filename"]
-        img = Image.open(img_path).convert("RGB")
-        W, H = img.size
+        _img_path2 = Path("../data/camera_trap") / row["filename"]
+        _img2 = Image.open(_img_path2).convert("RGB")
+        _W2, _H2 = _img2.size
 
-        x1 = int(row["bbox_x"] * W)
-        y1 = int(row["bbox_y"] * H)
-        x2 = int((row["bbox_x"] + row["bbox_w"]) * W)
-        y2 = int((row["bbox_y"] + row["bbox_h"]) * H)
+        _x1 = int(row["bbox_x"] * _W2)
+        _y1 = int(row["bbox_y"] * _H2)
+        _x2 = int((row["bbox_x"] + row["bbox_w"]) * _W2)
+        _y2 = int((row["bbox_y"] + row["bbox_h"]) * _H2)
 
-        crop = img.crop((x1, y1, x2, y2))
-        stem = img_path.stem
-        idx = len(crop_paths)
-        out_path = CROPS_DIR / f"{stem}_crop{idx:04d}.jpg"
-        crop.save(out_path, quality=90)
-        crop_paths.append(out_path)
+        _crop = _img2.crop((_x1, _y1, _x2, _y2))
+        _stem = _img_path2.stem
+        _idx = len(crop_paths)
+        _out_path = CROPS_DIR / f"{_stem}_crop{_idx:04d}.jpg"
+        _crop.save(_out_path, quality=90)
+        crop_paths.append(_out_path)
 
     print(f"Saved {len(crop_paths)} animal crops to {CROPS_DIR}")
-    return CROPS_DIR, Image, W, H, animal_detections, crop, crop_paths, idx, img, img_path, out_path, row, stem, x1, x2, y1, y2
+    return CROPS_DIR, crop_paths
 
 
 @app.cell

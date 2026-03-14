@@ -79,23 +79,23 @@ def _confidence_plot(df, plt):
         categories = df["category"].unique()
         colours = {"animal": "steelblue", "person": "tomato", "vehicle": "goldenrod"}
 
-        fig, axes = plt.subplots(1, len(categories), figsize=(5 * len(categories), 4), sharey=False)
+        _fig, _axes = plt.subplots(1, len(categories), figsize=(5 * len(categories), 4), sharey=False)
         if len(categories) == 1:
-            axes = [axes]
+            _axes = [_axes]
 
-        for ax, cat in zip(axes, categories):
+        for _ax, cat in zip(_axes, categories):
             subset = df[df["category"] == cat]["confidence"]
-            ax.hist(subset, bins=20, range=(0, 1), color=colours.get(cat, "grey"), edgecolor="white")
-            ax.set_title(f"{cat} (n={len(subset)})")
-            ax.set_xlabel("Confidence")
-            ax.set_ylabel("Count")
-            ax.axvline(0.5, color="red", linestyle="--", linewidth=1, label="threshold=0.5")
-            ax.legend(fontsize=8)
+            _ax.hist(subset, bins=20, range=(0, 1), color=colours.get(cat, "grey"), edgecolor="white")
+            _ax.set_title(f"{cat} (n={len(subset)})")
+            _ax.set_xlabel("Confidence")
+            _ax.set_ylabel("Count")
+            _ax.axvline(0.5, color="red", linestyle="--", linewidth=1, label="threshold=0.5")
+            _ax.legend(fontsize=8)
 
         plt.suptitle("MegaDetector confidence distributions", fontsize=13)
         plt.tight_layout()
         plt.show()
-    return axes, cat, colours, fig, subset
+    return
 
 
 @app.cell
@@ -110,12 +110,12 @@ def _step2(mo):
 
 @app.cell
 def _crop_grid(Image, Path, df, np, plt):
-    CROPS_DIR = Path("../data/camera_trap_crops")
+    _CROPS_DIR = Path("../data/camera_trap_crops")
     N_COLS = 5
     N_ROWS = 4
     N_CROPS = N_COLS * N_ROWS
 
-    crop_files = sorted(CROPS_DIR.glob("*.jpg")) if CROPS_DIR.exists() else []
+    crop_files = sorted(_CROPS_DIR.glob("*.jpg")) if _CROPS_DIR.exists() else []
 
     if not crop_files:
         print("No crops found. Run p3_megadetector.py first.")
@@ -123,25 +123,23 @@ def _crop_grid(Image, Path, df, np, plt):
         rng = np.random.default_rng(seed=42)
         sample = rng.choice(crop_files, size=min(N_CROPS, len(crop_files)), replace=False)
 
-        fig, axes = plt.subplots(N_ROWS, N_COLS, figsize=(N_COLS * 2.5, N_ROWS * 2.5))
-        axes = axes.flatten()
+        _fig, _axes = plt.subplots(N_ROWS, N_COLS, figsize=(N_COLS * 2.5, N_ROWS * 2.5))
+        _axes = _axes.flatten()
 
-        for ax, path in zip(axes, sample):
-            img = Image.open(path)
-            ax.imshow(img)
-            ax.set_title(path.stem[-12:], fontsize=7)
-            ax.axis("off")
+        for _ax, path in zip(_axes, sample):
+            _img = Image.open(path)
+            _ax.imshow(_img)
+            _ax.set_title(path.stem[-12:], fontsize=7)
+            _ax.axis("off")
 
         # Hide unused axes
-        for ax in axes[len(sample):]:
-            ax.axis("off")
+        for _ax in _axes[len(sample):]:
+            _ax.axis("off")
 
         plt.suptitle(f"Random sample of {len(sample)} animal crops", fontsize=12)
         plt.tight_layout()
         plt.show()
-    return (
-        CROPS_DIR, N_COLS, N_CROPS, N_ROWS, ax, axes, crop_files, fig, img, path, rng, sample,
-    )
+    return N_COLS, N_CROPS, N_ROWS, crop_files, path, rng, sample
 
 
 @app.cell
@@ -166,29 +164,30 @@ def _confidence_bands(Image, Path, df, plt):
 
     animals = df[df["category"] == "animal"].copy() if not df.empty else None
 
-    if animals is not None and CROPS_DIR.exists():
-        fig, axes = plt.subplots(3, 5, figsize=(14, 9))
+    _CROPS_DIR2 = Path("../data/camera_trap_crops")
+    if animals is not None and _CROPS_DIR2.exists():
+        _fig, _axes = plt.subplots(3, 5, figsize=(14, 9))
 
         for row_idx, (band_name, (lo, hi)) in enumerate(bands.items()):
             band_df = animals[(animals["confidence"] >= lo) & (animals["confidence"] < hi)]
-            band_crops = sorted(CROPS_DIR.glob("*.jpg"))[:5]  # simplification
+            band_crops = sorted(_CROPS_DIR2.glob("*.jpg"))[:5]  # simplification
 
             for col_idx in range(5):
-                ax = axes[row_idx][col_idx]
+                _ax = _axes[row_idx][col_idx]
                 if col_idx < len(band_crops):
-                    ax.imshow(Image.open(band_crops[col_idx]))
-                    ax.axis("off")
+                    _ax.imshow(Image.open(band_crops[col_idx]))
+                    _ax.axis("off")
                     if col_idx == 0:
-                        ax.set_ylabel(band_name, fontsize=9, rotation=0, labelpad=80)
+                        _ax.set_ylabel(band_name, fontsize=9, rotation=0, labelpad=80)
                 else:
-                    ax.axis("off")
+                    _ax.axis("off")
 
         plt.suptitle("Crops by confidence band — do higher confidence crops look better?", fontsize=11)
         plt.tight_layout()
         plt.show()
     else:
         print("Run p3_megadetector.py first to generate crops and detections.")
-    return axes, ax, band_crops, band_df, band_name, bands, col_idx, fig, hi, lo, row_idx
+    return
 
 
 @app.cell

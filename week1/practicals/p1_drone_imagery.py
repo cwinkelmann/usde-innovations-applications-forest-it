@@ -38,45 +38,6 @@ def _context(mo):
 
 
 @app.cell
-def _(args):
-
-
-    from week1.data.download_data import download_herdnet_weights, download_general_dataset, download_caltech, download_serengeti
-
-    download_general_dataset(full=args.full)
-
-    return download_caltech, download_herdnet_weights, download_serengeti
-
-
-@app.cell
-def _(args, download_caltech, download_serengeti):
-    # Amount of images to download
-    n = 500 if args.full else 500
-
-    download_serengeti(n_images=n)
-    download_caltech(n_images=n)
-
-    print("\n" + "=" * 50)
-    print("Week 1 datasets ready.")
-    print(f"  general_dataset/    ← HerdNet aerial data")
-    print(f"  camera_trap/serengeti_subset/  ← {n} Serengeti images")
-    print(f"  camera_trap/caltech_subset/    ← {n} Caltech images")
-    print(f"  camera_trap_labels.csv         ← P6 reference labels")
-    print()
-    print("Still needed (manual copy from C. Winkelmann):")
-    print("  iguanas/tiles/       ← ~500 iguana tile JPEGs")
-    print("  iguanas/iguana_counts.csv")
-    print("See DATASETS.md section 2 for details.")
-    return
-
-
-@app.cell
-def _(download_herdnet_weights):
-    download_herdnet_weights()
-    return
-
-
-@app.cell
 def _imports():
     from pathlib import Path
 
@@ -86,9 +47,39 @@ def _imports():
     import pandas as pd
     from PIL import Image
 
-    from wildlife_detection.tiling.utils import generate_tile_windows, read_tile
+    from wildlife_detection.tiling.utils import generate_tile_windows
 
     return Image, Path, generate_tile_windows, mpatches, np, pd, plt
+
+
+@app.cell
+def _():
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    # __file__ is the absolute path of this notebook (.py file).
+    # Parent is week1/practicals/, so ../../data → that's wrong.
+    # Parent's parent is week1/, and week1/data/ is what we need.
+    nb_data_dir = _Path(__file__).parent.parent / "data"
+    _data_dir = str(nb_data_dir.resolve())
+
+    if _data_dir not in _sys.path:
+        _sys.path.insert(0, _data_dir)
+
+    from download_data import download_general_dataset as _dl
+
+    _test_sample = nb_data_dir / "general_dataset" / "test_sample"
+    _test_csv    = nb_data_dir / "general_dataset" / "test_sample.csv"
+
+    if not _test_sample.exists() or not _test_csv.exists():
+        print("Downloading HerdNet General Dataset test sample from HuggingFace...")
+        print("(First run: ~200 MB — takes a few minutes)")
+        _dl(full=False)
+        print("Done.")
+    else:
+        _n = len(list(_test_sample.glob("*.jpg")))
+        print(f"Data ready: {_n} tiles in {_test_sample}")
+    return (nb_data_dir,)
 
 
 @app.cell
@@ -105,9 +96,18 @@ def _step1(mo):
 
 
 @app.cell
-def _load_data(Path, pd):
-    DATA_DIR = Path("../data/general_dataset/test_sample")
-    CSV_PATH = Path("../data/general_dataset/test_sample.csv")
+def _(nb_data_dir):
+    import os
+    print(os.getcwd())  # equivalent to !pwd
+
+    nb_data_dir
+    return
+
+
+@app.cell
+def _load_data(Path, nb_data_dir, pd):
+    DATA_DIR = nb_data_dir / Path("general_dataset/test_sample")
+    CSV_PATH = nb_data_dir / Path("general_dataset/test_sample.csv")
 
     if not DATA_DIR.exists() or not CSV_PATH.exists():
         print("Data not found — run:  python week1/data/download_data.py --sample")
