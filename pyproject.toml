@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wildlife-detection"
+version = "0.1.0"
+description = "Aerial wildlife detection pipeline for drone imagery"
+requires-python = ">=3.10"
+dependencies = [
+    "rasterio",
+    "geopandas",
+    "shapely",
+    "numpy",
+    "pillow",
+    "pandas",
+    "omegaconf",
+    "wandb",
+    "torch",
+    "torchvision",
+    "scipy",
+    "geo2ml",
+]
+
+[project.optional-dependencies]
+yolo = ["ultralytics"]
+segmentation = ["segmentation-models-pytorch", "transformers"]
+all = [
+    "ultralytics",
+    "segmentation-models-pytorch",
+    "transformers",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

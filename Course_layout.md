@@ -162,6 +162,7 @@ By the end of Week 1, students can:
 
 **Block 2 — Segmentation in Ecology & Remote Sensing (50 min)**
 - Land cover mapping with Sentinel-2 + U-Net style models
+- Compare U-NET, SegFormer and SAM
 - Tree crown delineation from UAV/LiDAR
 - SAM (Segment Anything Model) — what it is and why ecologists care
 - Brief preview of Week 2 RADAR use case (Galamsey/Ghana): what they'll apply this to
@@ -175,6 +176,7 @@ By the end of Week 1, students can:
 - Students explain back the pipeline: detect → classify → segment
 - What would a complete AI ecology monitoring system look like?
 - Open questions to carry into the Easter break
+- Discuss matures geospatial AI tools like TorchGeo
 
 ---
 
@@ -222,6 +224,5 @@ By the end of Week 1, students can:
 - YOLO/DETR architecture internals
 - Model training from scratch
 - Transformer attention math
-- Anything requiring GPU clusters
 
 > The goal is **fluent tool use and conceptual literacy**, not ML research expertise.

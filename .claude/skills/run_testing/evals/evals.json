@@ -1,0 +1,89 @@
+{
+  "skill_name": "hilda-testing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to run all the HILDA tests to make sure everything is working correctly. Can you help me execute the test suite?",
+      "expected_output": "Checks environment setup, validates test data availability, and executes the full HILDA test suite with appropriate pytest commands and error interpretation",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Performs environment check for conda, GPU, and test data",
+          "type": "workflow_validation",
+          "details": "Should check conda environment, GPU availability, test data presence before running tests"
+        },
+        {
+          "text": "Executes pytest with appropriate parameters",
+          "type": "command_execution",
+          "details": "Should run pytest tests/ -v with proper configuration"
+        },
+        {
+          "text": "Provides interpretation of test results",
+          "type": "response_quality",
+          "details": "Should explain test outcomes and provide guidance for any failures"
+        },
+        {
+          "text": "Maps test categories and expected runtimes",
+          "type": "information_accuracy",
+          "details": "Should describe different test types (unit, integration, model) and their requirements"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Can you run just the fast tests? I don't have GPU available and want to quickly verify the basic functionality works.",
+      "expected_output": "Selects and runs only fast unit tests that don't require GPU or large models, avoiding integration tests that might be slow",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies fast test categories correctly",
+          "type": "test_selection",
+          "details": "Should select TestListImages and TestMetadataExtraction rather than full pipeline tests"
+        },
+        {
+          "text": "Skips GPU-dependent tests appropriately",
+          "type": "environment_awareness",
+          "details": "Should avoid HerdNet model tests and other GPU-dependent functionality"
+        },
+        {
+          "text": "Executes targeted pytest command",
+          "type": "command_execution",
+          "details": "Should run specific test classes rather than full test suite"
+        },
+        {
+          "text": "Estimates runtime appropriately",
+          "type": "information_accuracy",
+          "details": "Should indicate fast tests run in under 30 seconds"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The mission import tests are failing with some error about EPSG codes. Can you help me debug this?",
+      "expected_output": "Provides specific debugging guidance for mission import test failures, focusing on EPSG/coordinate system issues, and suggests targeted test runs",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies mission import as specific test category",
+          "type": "test_knowledge",
+          "details": "Should recognize mission import tests in tests/pipeline/mission_import/"
+        },
+        {
+          "text": "Provides EPSG-specific debugging guidance",
+          "type": "troubleshooting_accuracy",
+          "details": "Should mention pyproj, GDAL installation, coordinate system validation"
+        },
+        {
+          "text": "Suggests targeted test execution",
+          "type": "workflow_guidance",
+          "details": "Should recommend running specific mission import tests with verbose output"
+        },
+        {
+          "text": "Explains test data requirements",
+          "type": "information_completeness",
+          "details": "Should describe required drone image data (Mavic 2 Pro, Matrice 4E)"
+        }
+      ]
+    }
+  ]
+}

@@ -3,4 +3,9 @@
 
 ### local python environment
 
+conda
+install gdal
+
+
+
 #### On the notebook install Megadetector
