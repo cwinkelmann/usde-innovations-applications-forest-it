@@ -36,9 +36,9 @@ INSTALATION_INSTRUCTION.md
 week1/
   lectures/                     ← slide decks and lecture notes
   practicals/                   ← Marimo notebooks (one per practical block)
-    p1_drone_imagery.py         ← Practical 1: tile a GeoTIFF, visualise a grid
+    p1_drone_imagery.py         ← Practical 1: explore aerial wildlife dataset (tiles + annotations)
     p2_annotation_tools.py      ← Practical 2: point / box / polygon annotation demo
-    p3_megadetector.py          ← Practical 3: run MegaDetector, parse JSON output
+    p3_megadetector.py          ← Practical 3: run MegaDetector, parse JSON output, fine tune a model
     p4_detection_exploration.py ← Practical 4: browse detections, failure modes
     p5_classifier.py            ← Practical 5: TIMM classifier inference on crops
     p6_evaluation.py            ← Practical 6: accuracy check against reference set
@@ -99,7 +99,7 @@ Each notebook must run top-to-bottom without errors on the shared conda environm
 
 | Practical | Marimo file | Key tools | Status |
 |-----------|------------|-----------|--------|
-| P1 — Drone imagery | `week1/practicals/p1_drone_imagery.py` | `rasterio`, `matplotlib` | TODO |
+| P1 — Dataset exploration | `week1/practicals/p1_drone_imagery.py` | `PIL`, `pandas`, `matplotlib` | done |
 | P2 — Annotation demo | `week1/practicals/p2_annotation_tools.py` | CVAT/Label Studio tour | TODO |
 | P3 — MegaDetector | `week1/practicals/p3_megadetector.py` | `PytorchWildlife` | TODO |
 | P4 — Detection exploration | `week1/practicals/p4_detection_exploration.py` | `matplotlib`, `pandas` | TODO |

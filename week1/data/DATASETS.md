@@ -1,4 +1,4 @@
-# Dataset Proposal — Week 1 Practicals
+Wait# Dataset Proposal — Week 1 Practicals
 
 This document maps datasets to practicals and explains the rationale for each choice.
 
@@ -51,7 +51,7 @@ snapshot_download(
 ```
 
 **Use in course:**
-- **P1** — use `test_sample/` tiles for the tiling visualisation
+- **P1** — use `test_sample/` tiles for dataset exploration and annotation inspection
 - **HerdNet notebook** — full dataset for training demonstration
 - **P2** — visualise point annotation format
 
@@ -288,7 +288,7 @@ print(f"Done. Images in {OUTPUT_DIR}")
 
 | Practical | Dataset | What students use |
 |-----------|---------|-------------------|
-| P1 — Drone imagery | karisu/General_Dataset `test_sample/` | Tile JPEGs + point CSV |
+| P1 — Dataset exploration | karisu/General_Dataset `test_sample/` | Tile JPEGs + point CSV |
 | P2 — Annotation tools | Iguanas From Above (teaching subset) | GeoPackage, visualise annotation types |
 | P3 — MegaDetector | Snapshot Serengeti (5k subset) | Raw images → run MegaDetector |
 | P4 — Detection exploration | Snapshot Serengeti detections from P3 | Detections CSV + crops |

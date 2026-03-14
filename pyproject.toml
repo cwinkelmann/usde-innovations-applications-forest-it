@@ -17,6 +17,11 @@ dependencies = [
     "torchvision",
     "scipy",
     "marimo",
+    "label-studio",
+    "albumentations",
+    "megadetector",
+    "sahi",
+    "ultralytics",
 ]
 
 [project.optional-dependencies]

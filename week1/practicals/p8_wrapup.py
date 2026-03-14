@@ -18,7 +18,7 @@ def _context(mo):
     **Context:** You have now run through the complete Week 1 pipeline:
 
     ```
-    Drone survey → GeoTIFF → Tiling (P1)
+    Drone survey → Tiles (P1: explore dataset)
     Annotation tools (P2)
     MegaDetector on camera traps (P3) → Detection exploration (P4)
     Species classification (P5) → Evaluation (P6)
@@ -47,7 +47,7 @@ def _pipeline_summary(mo):
     Drone survey
         │
         ▼
-    JPEG tiles (PIL/numpy) ────────────────► Tile grid (P1)
+    JPEG tiles (PIL/numpy) ────────────────► Dataset inspection (P1)
                                                     │
                                   Point annotations ┘ (CVAT / Label Studio)
                                                     │
