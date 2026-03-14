@@ -4,8 +4,154 @@ Course Materials with the Course Innovations and Applications for Forest IT
 > A practical course on automated wildlife population estimation using drone imagery and deep learning,
 > grounded in real-world iguana detection research from the Galápagos Islands.
 
-If you are a student in this course please fill out the form so I can prepare myself better and you get a first impression of the course content: https://docs.google.com/forms/d/1DyRN7uuO4OkgGec36HOZ5IznJmNb4vsA1yPgev4bLHY/edit 
+If you are a student in this course please fill out the form so I can prepare myself better and you get a first impression of the course content: 
+https://docs.google.com/forms/d/1DyRN7uuO4OkgGec36HOZ5IznJmNb4vsA1yPgev4bLHY/edit 
 ---
+
+
+"""
+TODO explain the motivation,
+then megadetector, 
+then classificaiton
+"""
+
+
+## Course Structure
+# FIT — Forest IT: AI & UAV Wildlife Monitoring
+
+**Module:** Innovations and Applications of Forest IT  
+**Institution:** HNEE — Eberswalde University for Sustainable Development  
+**Teaching team:** J.-P. Mund & C. Winkelmann  
+**Dates:** March 30 – April 10, 2026
+
+---
+
+## What This Repository Is
+
+This repo contains the course materials, lecture structure, and practical exercises
+for the FIT module. It is designed so that students, guest lecturers, and teaching
+assistants can follow the full arc of the course — from lecture inputs to hands-on
+coding sessions — without needing prior briefing.
+
+For the full day-by-day breakdown, see **[Course_layout.md](./Course_layout.md)**.
+
+---
+## Course Overview
+
+The module is split into two thematic weeks:
+
+### Week 1 — AI & UAV Wildlife Image Classification (Mar 30 – Apr 2)
+How do we use drones and AI to detect, classify, and count animals in the wild?
+
+Starting from the real-world problem of wildlife population monitoring, students
+work through the complete pipeline:
+
+- Why ecology needs AI: the data bottleneck in biodiversity monitoring
+- UAV survey design and drone imagery fundamentals
+- Camera trapping and the MegaDetector workflow
+- Image classification with pre-trained models
+- Introduction to segmentation — the bridge into Week 2
+
+The running case study is the **Iguanas From Above** project: automated detection
+and abundance estimation of marine iguanas (*Amblyrhynchus cristatus*) on the
+Galápagos Islands using drone imagery and deep learning.
+
+### Week 2 — Radar Remote Sensing & Galamsey Detection (Apr 7 – Apr 10)
+How do we detect illegal mining activity in Biosphere Reserves from space?
+
+Building on the segmentation concepts from Week 1, students apply radar remote
+sensing (SAR) to monitor Galamsey (illegal artisanal gold mining) in Ghanaian
+Biosphere Reserves — combining Sentinel-1 SAR data with change detection methods.
+
+---
+
+## Repository Structure
+```
+Course_layout.md          ← Master course schedule and pedagogical structure
+week1/
+  lectures/               ← Slide decks and lecture notes (Week 1)
+  practicals/             ← Jupyter notebooks and exercise scripts
+  data/                   ← Sample datasets for practicals (or download scripts)
+week2/
+  lectures/               ← Slide decks and lecture notes (Week 2)
+  practicals/             ← Jupyter notebooks and exercise scripts
+  data/
+shared/
+  environment.yml         ← Conda environment for all practicals
+  setup_instructions.md   ← How to get everything running on day 1
+```
+
+---
+
+## Learning Objectives
+
+By the end of the module, students will be able to:
+
+1. Explain how AI tools are applied across the ecology monitoring pipeline
+2. Run MegaDetector on camera trap imagery and interpret its outputs
+3. Apply a pre-trained image classifier to wildlife crops
+4. Understand segmentation conceptually and run a basic SAM demo
+5. Work with SAR imagery for land cover change detection
+6. Critically assess where AI helps — and where it fails — in field ecology
+
+---
+
+## Practical Environment
+
+All practicals run in Python. Set up your environment once before Day 1:
+```bash
+conda env create -f shared/environment.yml
+conda activate fit-module
+```
+
+Key packages used across the module:
+
+| Package | Purpose |
+|---------|---------|
+| `megadetector` | Camera trap animal detection |
+| `timm` + `torch` | Pre-trained classification models |
+| `segment-anything` | SAM segmentation demos |
+| `rasterio` / `GDAL` | Geospatial raster data handling |
+| `matplotlib` / `folium` | Visualisation |
+
+A QGIS installation is recommended but not required.
+
+---
+
+## Deliberate Scope
+
+This is **not** a deep learning theory course. We do not cover:
+
+- Backpropagation or training from scratch
+- Loss functions, optimisers, or hyperparameter tuning
+- Transformer architecture internals
+- GPU cluster workflows
+
+The goal is **tool fluency and conceptual literacy** — understanding what these
+models do, how to run them, and how to evaluate their outputs for real ecological
+applications.
+
+---
+
+## Case Studies
+
+| Case Study | Location | Modality | Week |
+|-----------|----------|----------|------|
+| Iguanas From Above | Galápagos, Ecuador | UAV RGB imagery | 1 |
+| Galamsey Detection | Ghana Biosphere Reserves | SAR / Sentinel-1 | 2 |
+
+---
+
+## Contributing & Contact
+
+This repository is actively developed alongside the course. If you are a student
+and find an error or want to suggest an improvement, open an issue or contact the
+teaching team directly.
+
+**J.-P. Mund** — module lead  
+**C. Winkelmann** — practical sessions (Week 1)  
+**N. Voss & A. Bosu** — radar remote sensing (Week 2)
+
 
 ## Table of Contents
 
@@ -57,7 +203,7 @@ who want to apply deep learning to wildlife monitoring. A prior survey of the ex
 
 Reliable population estimates are fundamental to conservation policy. Traditional methods — rear-seat
 aerial observers, mark-recapture, transect walks — are labour-intensive, error-prone and hard to
-standardise. Deep learning on drone imagery offers a scalable alternative.
+standardise. Deep learning on remote sensing imagery offers a scalable alternative.
 
 **Applications covered in this course:**
 - UAV-based population estimation (aerial detection)
@@ -98,7 +244,9 @@ Standard RGB sensors. Most drone datasets and pre-trained models use RGB.
 - **GBIF** — occurrence data API: https://techdocs.gbif.org/en/openapi/v1/species
 - **Xeno-Canto** — bird sound recordings: https://xeno-canto.org
 - **Kaggle / DrivenData** — competition datasets with ecology focus: https://github.com/drivendataorg
-- **Wildlife Insights** — camera trap uploads + SpeciesNet predictions
+- iWildCam Challenge Data: https://www.kaggle.com/competitions/iwildcam2022-fgvc9/data
+- **Wildlife Insights** — camera trap uploads + SpeciesNet predictions: http://wildlifeinsights.org 
+- **https://zenodo.org/records/8136161** - Crown Data for "Accurate delineation of individual tree crowns in tropical forests from aerial RGB imagery using Mask R-CNN"
 
 ### Dataset Formats
 - **COCO JSON** — bounding boxes, segmentation masks
@@ -116,6 +264,7 @@ Standard RGB sensors. Most drone datasets and pre-trained models use RGB.
 - **CVAT** — open-source, advanced multi-task annotation
 - **Hasty.ai** — AI-assisted labelling (used in iguana dataset)
 - **Zooniverse** — citizen science crowdsourcing platform
+- **QGIS** - geospatial data labeling
 
 ### Annotation Types
 - Bounding boxes — standard for detection tasks
@@ -473,6 +622,13 @@ HerdNet with DLA-169 backbone, FIDT density maps.
 - Dynamic occupancy modelling (Bayesian / JAGS)
 - Comparison against Zooniverse citizen science volunteer counts
 
+
+## Ideas for examination projects
+TODO object deduplication via photogrammetry
+TODO inspect optuna for hyperparameter search.
+TODO: look into iwildcam data, is could the prevalence of species be tied to landsat 8 images? like is the densitiy tied to some spectra?
+
+
 ---
 
 ## Conference Highlights — ICTC 2026
@@ -562,11 +718,12 @@ Integrates with PyTorch Wildlife.
 
 #### Galápagos Marine Iguana Case Study
 
-| Paper | Key Finding | DOI |
-|---|---|---|
-| Varela-Jaramillo et al. (2023) — Iguana drone pilot | Drone counts were 14% closer to mark-resight estimates and 17–35% higher than ground counts, reaching previously inaccessible colonies | [10.1186/s12983-022-00478-5](https://doi.org/10.1186/s12983-022-00478-5) |
-| Varela-Jaramillo et al. (2025) — Citizen science counts | 13,000+ volunteers achieved 91–92% counting accuracy; HDBSCAN aggregation outperformed standard majority-vote methods | [10.1038/s41598-025-08381-9](https://doi.org/10.1038/s41598-025-08381-9) |
+| Paper                                                       | Key Finding | DOI |
+|-------------------------------------------------------------|---|---|
+| Varela-Jaramillo et al. (2023) — Iguana drone pilot         | Drone counts were 14% closer to mark-resight estimates and 17–35% higher than ground counts, reaching previously inaccessible colonies | [10.1186/s12983-022-00478-5](https://doi.org/10.1186/s12983-022-00478-5) |
+| Varela-Jaramillo et al. (2025) — Citizen science counts     | 13,000+ volunteers achieved 91–92% counting accuracy; HDBSCAN aggregation outperformed standard majority-vote methods | [10.1038/s41598-025-08381-9](https://doi.org/10.1038/s41598-025-08381-9) |
 | Varela-Jaramillo et al. (2025, submitted) — Lessons learned | Lessons from multi-year drone surveys of Galápagos marine iguanas across five islands | — |
+| Winkelmann (2025)                                           | Automated Marine Iguana Detection Using Drone Imagery and Deep Learning on the Galápagos Islands | https://doi.org/10.6084/m9.figshare.30719999 |
 
 ### Useful Links
 | Resource                        | URL |
@@ -585,3 +742,9 @@ Integrates with PyTorch Wildlife.
 | GBIF Species API                | https://techdocs.gbif.org/en/openapi/v1/species |
 | Xeno-Canto Sound                | https://xeno-canto.org |
 | Marimo Notebooks                | https://molab.marimo.io |
+
+### Courses
+
+| Resource                         | URL |
+|----------------------------------|---|
+| Practical Computer Vision Course | https://github.com/andandandand/practical-computer-vision |
