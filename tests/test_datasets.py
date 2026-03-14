@@ -83,15 +83,15 @@ class TestHerdNetDataset:
         assert count == 2
 
     def test_empty_tile_count_zero(self, sample_tiles_dir, sample_annotations_df):
-        """A tile with no annotations should have count=0 and zero FIDT map."""
-        filenames = ["tile_4.jpg"]
+        """A tile with no annotations should have count=0 and an all-zero FIDT map."""
+        filenames = ["tile_4.jpg"]  # tile_4.jpg has no entries in sample_annotations_df
         ds = HerdNetDataset(
             sample_tiles_dir, sample_annotations_df, filenames,
             patch_size=64, down_ratio=2, fidt_radius=1, augment=False,
         )
         _, fidt_map, count = ds[0]
-        # tile_4.jpg has 1 annotation at (40, 35) which is within the 64x64 tile
-        assert count == 1
+        assert count == 0
+        assert fidt_map.sum() == 0
 
     def test_fidt_map_range(self, sample_tiles_dir, sample_annotations_df):
         """FIDT map values should be in [0, 1]."""

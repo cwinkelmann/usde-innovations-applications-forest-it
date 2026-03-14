@@ -1,19 +1,40 @@
 # Aerial Wildlife Detection — Course Overview
-Course Materials with the Course Innovations and Applications for Forest IT
+Course Materials for the Innovations and Applications of Forest IT (FIT) Module, HNEE
 
-> A practical course on automated wildlife population estimation using drone imagery and deep learning,
-> grounded in real-world iguana detection research from the Galápagos Islands.
+> A practical course on automated wildlife monitoring using drone imagery, camera traps,
+> and deep learning — grounded in real-world iguana detection research from the Galápagos Islands.
 
-If you are a student in this course please fill out the form so I can prepare myself better and you get a first impression of the course content: 
-https://docs.google.com/forms/d/1DyRN7uuO4OkgGec36HOZ5IznJmNb4vsA1yPgev4bLHY/edit 
+If you are a student, please fill out the form before Day 1:
+https://docs.google.com/forms/d/1DyRN7uuO4OkgGec36HOZ5IznJmNb4vsA1yPgev4bLHY/edit
+
 ---
 
+## TL;DR
 
-"""
-TODO explain the motivation,
-then megadetector, 
-then classificaiton
-"""
+Wildlife ecologists are drowning in data. A single drone survey can produce tens of
+thousands of images; a camera trap network generates millions per year. Manual review
+is too slow, too expensive, and too inconsistent to scale.
+
+This course is about closing that gap with AI — not by building models from scratch,
+but by learning to use, evaluate, and critically apply the tools that already exist.
+
+By the end of the course you will be able to:
+
+- Run **MegaDetector** on camera trap images, interpret its confidence scores, and
+  extract animal crops for downstream classification
+- Apply a **pre-trained image classifier** (EfficientNet / timm) to identify species
+  from crops, and evaluate its performance honestly
+- Understand how **point-based detectors** like HerdNet count animals in dense aerial
+  imagery without bounding box annotations
+- Know when to trust a model's output — and when not to — including the common pitfalls
+  of spatial data leakage and overconfident predictions
+- Work with real data from the **Iguanas From Above** project: aerial drone surveys of
+  marine iguanas (*Amblyrhynchus cristatus*) on the Galápagos Islands
+
+The course is deliberately **not** about backpropagation, loss functions, or training
+from scratch. The goal is tool fluency and conceptual literacy — understanding what
+these models do, how to run them, and how to evaluate their outputs for real ecological
+applications.
 
 
 ## Course Structure

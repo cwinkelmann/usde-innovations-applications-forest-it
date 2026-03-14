@@ -8,9 +8,6 @@ version = "0.1.0"
 description = "Aerial wildlife detection pipeline for drone imagery"
 requires-python = ">=3.10"
 dependencies = [
-    "rasterio",
-    "geopandas",
-    "shapely",
     "numpy",
     "pillow",
     "pandas",
@@ -19,7 +16,7 @@ dependencies = [
     "torch",
     "torchvision",
     "scipy",
-    "geo2ml",
+    "marimo",
 ]
 
 [project.optional-dependencies]
