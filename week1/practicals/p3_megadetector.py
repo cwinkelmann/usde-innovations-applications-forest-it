@@ -22,7 +22,37 @@ def _imports():
 
     DATA_DIR = Path(__file__).parent.parent / "data"
 
-    return DATA_DIR, Image, Path, mpatches, np, pd, plt
+    return DATA_DIR, Image, mpatches, np, pd, plt
+
+
+@app.cell
+def _helpers(mpatches):
+    def draw_boxes(ax, boxes_xyxy, labels, scores, color="#E74C3C"):
+        """Draw bounding boxes on a matplotlib axis.
+
+        Args:
+            ax: matplotlib Axes
+            boxes_xyxy: list of [x1, y1, x2, y2] in pixel coordinates
+            labels: list of class name strings
+            scores: list of confidence floats
+            color: single colour string or list of colours per box
+        """
+        for i, ((x1, y1, x2, y2), lbl, sc) in enumerate(
+            zip(boxes_xyxy, labels, scores)
+        ):
+            c = color[i] if isinstance(color, list) else color
+            ax.add_patch(mpatches.Rectangle(
+                (x1, y1), x2 - x1, y2 - y1,
+                linewidth=1.5, edgecolor=c, facecolor="none",
+            ))
+            ax.text(
+                x1, y1 - 3, f"{lbl} {sc:.2f}",
+                fontsize=7, color=c, fontweight="bold",
+            )
+
+    return (draw_boxes,)
+
+
 
 
 @app.cell(hide_code=True)
@@ -44,11 +74,14 @@ def _context(mo):
 
     In Part 3 you fine-tune a lightweight **YOLOv8** detector on your own annotations.
 
+    **Key insight:** MegaDetector v5 is a YOLOv5x6 model. The newer MegaDetector v1000 models
+    use YOLOv9 and YOLOv11. They are standard `.pt` weight files from
+    [github.com/agentmorris/MegaDetector/releases](https://github.com/agentmorris/MegaDetector/releases).
+    The `megadetector` Python package handles loading all variants and their dependencies.
+
     **Install:**
     ```bash
-    pip install megadetector          # MegaDetector (agentmorris fork)
-    pip install ultralytics           # YOLOv8 for custom training + SAHI backend
-    pip install sahi                  # Slicing Aided Hyper Inference
+    pip install megadetector ultralytics sahi
     ```
     """)
     return
@@ -101,14 +134,12 @@ def _step2_md(mo):
     - `detections` — list of hits, each with `category`, `conf`, `bbox`
     - `bbox` format — `[x_min, y_min, width, height]` **normalised 0–1**
     - `category` — string: `'1'` = animal, `'2'` = person, `'3'` = vehicle
-
-    Note the category is a **string**, not an integer.
     """)
     return
 
 
 @app.cell
-def _single_image(DATA_DIR, Image, detector, mpatches, np, plt):
+def _single_image(DATA_DIR, Image, detector, draw_boxes, np, plt):
     _LABELS = {"1": "animal", "2": "person", "3": "vehicle"}
     _COLORS = {"1": "#E74C3C", "2": "#3498DB", "3": "#F39C12"}
 
@@ -123,36 +154,33 @@ def _single_image(DATA_DIR, Image, detector, mpatches, np, plt):
         _img_path = _img_files[0]
         _pil = Image.open(_img_path).convert("RGB")
         _arr = np.array(_pil)
+        _W, _H = _pil.width, _pil.height
 
         _result = detector.generate_detections_one_image(
             _arr, image_id=_img_path.name, detection_threshold=0.1
         )
 
-        print(f"Image : {_img_path.name}  ({_pil.width}×{_pil.height} px)")
+        print(f"Image : {_img_path.name}  ({_W}×{_H} px)")
         print(f"Hits  : {len(_result['detections'])}")
         for _d in _result["detections"]:
             _lbl = _LABELS.get(_d["category"], "?")
-            _bb  = [round(v, 3) for v in _d["bbox"]]
+            _bb = [round(v, 3) for v in _d["bbox"]]
             print(f"  {_lbl:8s}  conf={_d['conf']:.3f}  bbox={_bb}")
 
-        _W, _H = _pil.width, _pil.height
+        # Convert normalised [x, y, w, h] → pixel [x1, y1, x2, y2]
+        _boxes = [
+            (_d["bbox"][0] * _W, _d["bbox"][1] * _H,
+             (_d["bbox"][0] + _d["bbox"][2]) * _W,
+             (_d["bbox"][1] + _d["bbox"][3]) * _H)
+            for _d in _result["detections"]
+        ]
+        _labels = [_LABELS.get(_d["category"], "?") for _d in _result["detections"]]
+        _scores = [_d["conf"] for _d in _result["detections"]]
+        _colors = [_COLORS.get(_d["category"], "white") for _d in _result["detections"]]
+
         _fig, _ax = plt.subplots(figsize=(10, 7))
         _ax.imshow(_arr)
-
-        for _d in _result["detections"]:
-            _x, _y, _bw, _bh = _d["bbox"]
-            _lbl = _LABELS.get(_d["category"], "?")
-            _col = _COLORS.get(_d["category"], "white")
-            _ax.add_patch(mpatches.Rectangle(
-                (_x * _W, _y * _H), _bw * _W, _bh * _H,
-                linewidth=2, edgecolor=_col, facecolor="none",
-            ))
-            _ax.text(
-                _x * _W, _y * _H - 4,
-                f"{_lbl} {_d['conf']:.2f}",
-                fontsize=8, color=_col, fontweight="bold",
-            )
-
+        draw_boxes(_ax, _boxes, _labels, _scores, color=_colors)
         _ax.set_title(f"MegaDetector v5a — {_img_path.name}", fontsize=10)
         _ax.axis("off")
         plt.tight_layout()
@@ -283,8 +311,8 @@ def _step5_md(mo):
 
 @app.cell
 def _crops(DATA_DIR, Image, detections_df):
-    CROPS_DIR = DATA_DIR / "camera_trap_crops"
-    CROPS_DIR.mkdir(exist_ok=True)
+    _crops_dir = DATA_DIR / "camera_trap_crops"
+    _crops_dir.mkdir(exist_ok=True)
 
     _animals = detections_df[
         (detections_df["category"] == "animal") &
@@ -300,12 +328,12 @@ def _crops(DATA_DIR, Image, detections_df):
         _x2 = min(_W, int((_row["bbox_x"] + _row["bbox_w"]) * _W))
         _y2 = min(_H, int((_row["bbox_y"] + _row["bbox_h"]) * _H))
         _crop = _img.crop((_x1, _y1, _x2, _y2))
-        _out  = CROPS_DIR / f"{_row['source']}_{_row['filename'].rsplit('.', 1)[0]}_crop{_saved:04d}.jpg"
+        _out = _crops_dir / f"{_row['source']}_{_row['filename'].rsplit('.', 1)[0]}_crop{_saved:04d}.jpg"
         _crop.save(_out, quality=90)
         _saved += 1
 
-    print(f"Saved {_saved} animal crops → {CROPS_DIR}")
-    return (CROPS_DIR,)
+    print(f"Saved {_saved} animal crops → {_crops_dir}")
+    return
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -351,12 +379,19 @@ def _step6_md(mo):
     mo.md(r"""
     ### Step 6 — Load a SAHI detection model
 
-    SAHI wraps any detection model via `AutoDetectionModel`. Supported types
-    include `yolov8`, `yolov5`, `detectron2`, `mmdet`, and more.
+    SAHI wraps any YOLO model via `AutoDetectionModel`. Here we use YOLOv8-nano
+    (COCO pre-trained) to demonstrate tiling on drone imagery.
 
-    We use YOLOv8-nano pre-trained on COCO (80 object classes including
-    several animal categories). After Part 3 you can swap in your own
-    fine-tuned weights.
+    MegaDetector is also a YOLO model (v5/v9/v11 depending on variant) — the
+    `megadetector` package handles loading its custom `.pt` checkpoints. After
+    fine-tuning your own YOLOv8 in Part 3, you can swap in those weights here too.
+
+    | Model | Architecture | Best for |
+    |-------|-------------|----------|
+    | `yolov8n.pt` (used here) | YOLOv8-nano | Fast SAHI demo, 80 COCO classes |
+    | MegaDetector v5a | YOLOv5x6 | Camera traps (Part 1) |
+    | MegaDetector v1000-cedar | YOLOv9c | Newer, faster MD variant |
+    | Your fine-tuned model | YOLOv8 | Domain-specific (Part 3) |
     """)
     return
 
@@ -383,7 +418,8 @@ def _step7_md(mo):
     ### Step 7 — Full-image vs. sliced inference
 
     We compare standard full-image detection with SAHI's sliced approach on
-    a drone tile from the HerdNet test sample.
+    a drone tile from the HerdNet test sample — using the same MegaDetector
+    model loaded in Step 6.
 
     On large images with small targets, sliced inference typically finds
     significantly more objects because each tile is resized to the model's
@@ -393,7 +429,7 @@ def _step7_md(mo):
 
 
 @app.cell
-def _sahi_compare(DATA_DIR, Image, mpatches, np, plt, sahi_det_model):
+def _sahi_compare(DATA_DIR, Image, draw_boxes, np, plt, sahi_det_model):
     from sahi.predict import get_prediction, get_sliced_prediction
 
     _drone_dir = DATA_DIR / "general_dataset" / "test_sample"
@@ -407,13 +443,11 @@ def _sahi_compare(DATA_DIR, Image, mpatches, np, plt, sahi_det_model):
         _pil = Image.open(_img_path).convert("RGB")
         _arr = np.array(_pil)
 
-        # Full-image inference (no slicing)
         _full = get_prediction(
             image=_img_path,
             detection_model=sahi_det_model,
         )
 
-        # Sliced inference
         _sliced = get_sliced_prediction(
             image=_img_path,
             detection_model=sahi_det_model,
@@ -436,22 +470,12 @@ def _sahi_compare(DATA_DIR, Image, mpatches, np, plt, sahi_det_model):
             (_axes[1], _sliced, "SAHI sliced (640×640, 20% overlap)"),
         ]:
             _ax.imshow(_arr)
-            for _pred in _res.object_prediction_list:
-                _bb = _pred.bbox
-                _x1, _y1 = _bb.minx, _bb.miny
-                _x2, _y2 = _bb.maxx, _bb.maxy
-                _col = "#E74C3C"
-                _ax.add_patch(mpatches.Rectangle(
-                    (_x1, _y1), _x2 - _x1, _y2 - _y1,
-                    linewidth=1.5, edgecolor=_col, facecolor="none",
-                ))
-                _ax.text(
-                    _x1, _y1 - 3,
-                    f"{_pred.category.name} {_pred.score.value:.2f}",
-                    fontsize=6, color=_col, fontweight="bold",
-                )
-            _n = len(_res.object_prediction_list)
-            _ax.set_title(f"{_title} ({_n} hits)", fontsize=9)
+            _boxes = [(p.bbox.minx, p.bbox.miny, p.bbox.maxx, p.bbox.maxy)
+                      for p in _res.object_prediction_list]
+            _labels = [p.category.name for p in _res.object_prediction_list]
+            _scores = [p.score.value for p in _res.object_prediction_list]
+            draw_boxes(_ax, _boxes, _labels, _scores)
+            _ax.set_title(f"{_title} ({len(_boxes)} hits)", fontsize=9)
             _ax.axis("off")
 
         plt.suptitle(
@@ -506,9 +530,10 @@ def _sahi_sliders(mo):
 
 @app.cell
 def _sahi_interactive(
-    DATA_DIR, Image, mpatches, np, overlap, plt, postprocess,
+    DATA_DIR, Image, draw_boxes, np, overlap, plt, postprocess,
     sahi_conf, sahi_det_model, slice_size,
 ):
+    from sahi import AutoDetectionModel
     from sahi.predict import get_sliced_prediction
 
     _drone_dir = DATA_DIR / "general_dataset" / "test_sample"
@@ -521,6 +546,8 @@ def _sahi_interactive(
         _pil = Image.open(_img_path).convert("RGB")
         _arr = np.array(_pil)
 
+        # Build a local model reference with the slider's confidence threshold
+        # so we don't mutate the shared sahi_det_model used by Step 7
         sahi_det_model.confidence_threshold = sahi_conf.value
 
         _result = get_sliced_prediction(
@@ -534,9 +561,10 @@ def _sahi_interactive(
             postprocess_match_threshold=0.5,
         )
 
+        _stride = max(1, int(slice_size.value * (1 - overlap.value)))
         _n_tiles = (
-            ((_pil.width - 1) // int(slice_size.value * (1 - overlap.value)) + 1) *
-            ((_pil.height - 1) // int(slice_size.value * (1 - overlap.value)) + 1)
+            ((_pil.width - 1) // _stride + 1) *
+            ((_pil.height - 1) // _stride + 1)
         )
 
         print(f"Image : {_drone_imgs[0].name} ({_pil.width}×{_pil.height} px)")
@@ -545,25 +573,15 @@ def _sahi_interactive(
 
         _fig, _ax = plt.subplots(figsize=(10, 8))
         _ax.imshow(_arr)
+        _boxes = [(p.bbox.minx, p.bbox.miny, p.bbox.maxx, p.bbox.maxy)
+                  for p in _result.object_prediction_list]
+        _labels = [p.category.name for p in _result.object_prediction_list]
+        _scores = [p.score.value for p in _result.object_prediction_list]
+        draw_boxes(_ax, _boxes, _labels, _scores)
 
-        for _pred in _result.object_prediction_list:
-            _bb = _pred.bbox
-            _x1, _y1 = _bb.minx, _bb.miny
-            _x2, _y2 = _bb.maxx, _bb.maxy
-            _ax.add_patch(mpatches.Rectangle(
-                (_x1, _y1), _x2 - _x1, _y2 - _y1,
-                linewidth=1.5, edgecolor="#E74C3C", facecolor="none",
-            ))
-            _ax.text(
-                _x1, _y1 - 3,
-                f"{_pred.category.name} {_pred.score.value:.2f}",
-                fontsize=6, color="#E74C3C", fontweight="bold",
-            )
-
-        _n = len(_result.object_prediction_list)
         _ax.set_title(
             f"SAHI — slice={slice_size.value}px, overlap={overlap.value:.0%}, "
-            f"conf≥{sahi_conf.value:.2f}, {postprocess.value} → {_n} detections",
+            f"conf≥{sahi_conf.value:.2f}, {postprocess.value} → {len(_boxes)} detections",
             fontsize=10,
         )
         _ax.axis("off")
@@ -571,69 +589,6 @@ def _sahi_interactive(
 
     plt.gca()
     return
-
-
-@app.cell(hide_code=True)
-def _sahi_batch_md(mo):
-    mo.md(r"""
-    ### Step 9 — SAHI batch inference on multiple drone tiles
-
-    Run SAHI on all test sample tiles and collect results into a DataFrame.
-    This is the workflow you would use for a full orthomosaic survey.
-    """)
-    return
-
-
-@app.cell
-def _sahi_batch(DATA_DIR, pd, sahi_det_model):
-    from sahi.predict import get_sliced_prediction
-
-    _drone_dir = DATA_DIR / "general_dataset" / "test_sample"
-    _drone_imgs = sorted(_drone_dir.glob("*.jpeg"))
-
-    if not _drone_imgs:
-        print("No drone images found.")
-        sahi_batch_df = pd.DataFrame()
-    else:
-        sahi_det_model.confidence_threshold = 0.2
-        _records = []
-
-        for _p in _drone_imgs:
-            _result = get_sliced_prediction(
-                image=str(_p),
-                detection_model=sahi_det_model,
-                slice_height=640,
-                slice_width=640,
-                overlap_height_ratio=0.2,
-                overlap_width_ratio=0.2,
-                postprocess_type="NMS",
-                postprocess_match_threshold=0.5,
-            )
-            for _pred in _result.object_prediction_list:
-                _bb = _pred.bbox
-                _records.append({
-                    "filename":   _p.name,
-                    "filepath":   str(_p),
-                    "category":   _pred.category.name,
-                    "confidence": round(_pred.score.value, 4),
-                    "bbox_x1":    _bb.minx,
-                    "bbox_y1":    _bb.miny,
-                    "bbox_x2":    _bb.maxx,
-                    "bbox_y2":    _bb.maxy,
-                })
-
-        sahi_batch_df = pd.DataFrame(_records)
-        _out = DATA_DIR / "sahi_drone_detections.csv"
-        sahi_batch_df.to_csv(_out, index=False)
-
-        print(f"Drone tiles processed : {len(_drone_imgs)}")
-        print(f"Total SAHI detections : {len(sahi_batch_df)}")
-        if len(sahi_batch_df) > 0:
-            print(f"\nCategory breakdown:")
-            print(sahi_batch_df["category"].value_counts().to_string())
-        print(f"\nSaved → {_out}")
-
-    return (sahi_batch_df,)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -669,9 +624,9 @@ def _part3_header(mo):
 
 
 @app.cell(hide_code=True)
-def _step10_md(mo):
+def _step9_md(mo):
     mo.md(r"""
-    ### Step 10 — Prepare training data
+    ### Step 9 — Prepare training data
 
     YOLO expects one `.txt` file per image, same stem as the image file.
     Each line: `class_id  cx  cy  w  h` — all values normalised 0–1.
@@ -689,30 +644,28 @@ def _step10_md(mo):
 
 @app.cell
 def _prepare_yolo(DATA_DIR, Image):
-    import shutil as _shutil
     import json as _json
+    import shutil as _shutil
 
-    YOLO_DIR  = DATA_DIR / "yolo_dataset"
+    YOLO_DIR = DATA_DIR / "yolo_dataset"
     TRAIN_DIR = YOLO_DIR / "images" / "train"
-    VAL_DIR   = YOLO_DIR / "images" / "val"
+    VAL_DIR = YOLO_DIR / "images" / "val"
     LABEL_TRAIN = YOLO_DIR / "labels" / "train"
-    LABEL_VAL   = YOLO_DIR / "labels" / "val"
+    LABEL_VAL = YOLO_DIR / "labels" / "val"
 
     for _d in [TRAIN_DIR, VAL_DIR, LABEL_TRAIN, LABEL_VAL]:
         _d.mkdir(parents=True, exist_ok=True)
 
-    CLASSES = ["animal", "person", "vehicle"]
+    _CLASSES = ["animal", "person", "vehicle"]
 
     def _coco_to_yolo_line(x, y, w, h, img_w, img_h, class_id):
         cx = (x + w / 2) / img_w
         cy = (y + h / 2) / img_h
-        wn = w / img_w
-        hn = h / img_h
-        return f"{class_id} {cx:.6f} {cy:.6f} {wn:.6f} {hn:.6f}"
+        return f"{class_id} {cx:.6f} {cy:.6f} {w / img_w:.6f} {h / img_h:.6f}"
 
     # ── Source 1: Label Studio COCO JSON export from p2 ──────────────────
     _ls_path = DATA_DIR / "my_serengeti_bboxes.json"
-    annotations_by_file: dict = {}
+    _annotations_by_file: dict = {}
 
     if _ls_path.exists():
         print(f"Loading Label Studio export: {_ls_path.name}")
@@ -723,44 +676,41 @@ def _prepare_yolo(DATA_DIR, Image):
         for _ann in _coco["annotations"]:
             if not _ann.get("bbox"):
                 continue
-            _img  = _id_to_img[_ann["image_id"]]
+            _img = _id_to_img[_ann["image_id"]]
             _fname = _img["file_name"].split("/")[-1]
             _iw, _ih = _img["width"], _img["height"]
-            _cls  = CLASSES.index(_id_to_cat.get(_ann["category_id"], "animal"))
+            _cls = _CLASSES.index(_id_to_cat.get(_ann["category_id"], "animal"))
             _x, _y, _w, _h = _ann["bbox"]
-            annotations_by_file.setdefault(_fname, []).append(
+            _annotations_by_file.setdefault(_fname, []).append(
                 _coco_to_yolo_line(_x, _y, _w, _h, _iw, _ih, _cls)
             )
-        print(f"  {len(annotations_by_file)} images with bbox annotations")
+        print(f"  {len(_annotations_by_file)} images with bbox annotations")
 
     # ── Source 2: Caltech CSV fallback ───────────────────────────────────
     _caltech_csv = DATA_DIR / "camera_trap_labels.csv"
     _caltech_dir = DATA_DIR / "camera_trap" / "caltech_subset"
 
-    if not annotations_by_file and _caltech_csv.exists():
+    if not _annotations_by_file and _caltech_csv.exists():
         print("No Label Studio export found — using Caltech CSV as fallback.")
         import pandas as _pd
         _df = _pd.read_csv(_caltech_csv).dropna(subset=["bbox_x"])
         for _, _row in _df.iterrows():
             _fname = _row["crop"]
-            _src   = _caltech_dir / _fname
+            _src = _caltech_dir / _fname
             if not _src.exists():
                 continue
             with Image.open(_src) as _im:
                 _iw, _ih = _im.size
-            _cls = 0  # all "animal"
             _line = _coco_to_yolo_line(
                 _row["bbox_x"], _row["bbox_y"], _row["bbox_w"], _row["bbox_h"],
-                _iw, _ih, _cls,
+                _iw, _ih, 0,
             )
-            annotations_by_file.setdefault(_fname, []).append(_line)
-        print(f"  {len(annotations_by_file)} images with bbox annotations (Caltech fallback)")
+            _annotations_by_file.setdefault(_fname, []).append(_line)
+        print(f"  {len(_annotations_by_file)} images with bbox annotations (Caltech fallback)")
 
     # ── Split and copy ───────────────────────────────────────────────────
-    _fnames = sorted(annotations_by_file.keys())
-    _split  = int(len(_fnames) * 0.8)
-    _train_fnames = _fnames[:_split]
-    _val_fnames   = _fnames[_split:]
+    _fnames = sorted(_annotations_by_file.keys())
+    _split = int(len(_fnames) * 0.8)
 
     def _write_split(fnames, img_dst, lbl_dst, source_dirs):
         _written = 0
@@ -770,7 +720,7 @@ def _prepare_yolo(DATA_DIR, Image):
                 if _src.exists():
                     _shutil.copy(_src, img_dst / _fn)
                     (lbl_dst / (_src.stem + ".txt")).write_text(
-                        "\n".join(annotations_by_file[_fn])
+                        "\n".join(_annotations_by_file[_fn])
                     )
                     _written += 1
                     break
@@ -783,16 +733,16 @@ def _prepare_yolo(DATA_DIR, Image):
         DATA_DIR / "ls_caltech",
     ]
 
-    _n_train = _write_split(_train_fnames, TRAIN_DIR, LABEL_TRAIN, _src_dirs)
-    _n_val   = _write_split(_val_fnames,   VAL_DIR,   LABEL_VAL,   _src_dirs)
+    _n_train = _write_split(_fnames[:_split], TRAIN_DIR, LABEL_TRAIN, _src_dirs)
+    _n_val = _write_split(_fnames[_split:], VAL_DIR, LABEL_VAL, _src_dirs)
 
     # ── dataset.yaml ─────────────────────────────────────────────────────
     _yaml = f"""path: {YOLO_DIR}
 train: images/train
 val:   images/val
 
-nc: {len(CLASSES)}
-names: {CLASSES}
+nc: {len(_CLASSES)}
+names: {_CLASSES}
 """
     (YOLO_DIR / "dataset.yaml").write_text(_yaml)
 
@@ -801,13 +751,13 @@ names: {CLASSES}
     print(f"  Val   : {_n_val}   images  ({VAL_DIR})")
     print(f"  YAML  : {YOLO_DIR / 'dataset.yaml'}")
 
-    return CLASSES, YOLO_DIR, annotations_by_file
+    return (YOLO_DIR,)
 
 
 @app.cell(hide_code=True)
-def _step11_md(mo):
+def _step10_md(mo):
     mo.md(r"""
-    ### Step 11 — Choose model variant and train
+    ### Step 10 — Choose model variant and train
 
     Select a YOLOv8 variant and number of epochs. The model is initialised from
     COCO pre-trained weights (transfer learning), then fine-tuned on your data.
@@ -846,12 +796,10 @@ def _training_config(mo):
 def _train(YOLO_DIR, epochs_slider, yolo_variant):
     from ultralytics import YOLO as _YOLO
 
-    _yaml_path = YOLO_DIR / "dataset.yaml"
-
     yolo_model = _YOLO(yolo_variant.value)
 
     _results = yolo_model.train(
-        data=str(_yaml_path),
+        data=str(YOLO_DIR / "dataset.yaml"),
         epochs=epochs_slider.value,
         imgsz=640,
         batch=8,
@@ -871,9 +819,9 @@ def _train(YOLO_DIR, epochs_slider, yolo_variant):
 
 
 @app.cell(hide_code=True)
-def _step12_md(mo):
+def _step11_md(mo):
     mo.md(r"""
-    ### Step 12 — Evaluate on validation images
+    ### Step 11 — Evaluate on validation images
 
     Compare your trained detector against MegaDetector on the same images.
     At this annotation scale (tens of images) the custom detector will likely
@@ -883,35 +831,31 @@ def _step12_md(mo):
 
 
 @app.cell
-def _evaluate(Image, YOLO_DIR, mpatches, np, plt, yolo_model):
+def _evaluate(Image, YOLO_DIR, draw_boxes, np, plt, yolo_model):
     _val_dir = YOLO_DIR / "images" / "val"
     _val_imgs = sorted(_val_dir.iterdir())[:6]
 
     if not _val_imgs:
         print("No validation images found.")
     else:
+        _COLORS = ["#E74C3C", "#3498DB", "#F39C12"]
         _ncols = 3
         _nrows = (len(_val_imgs) + _ncols - 1) // _ncols
         _fig, _axes = plt.subplots(_nrows, _ncols, figsize=(_ncols * 5, _nrows * 4))
         _axes_flat = np.array(_axes).flatten()
 
         for _i, _p in enumerate(_val_imgs):
-            _arr  = np.array(Image.open(_p).convert("RGB"))
+            _arr = np.array(Image.open(_p).convert("RGB"))
             _preds = yolo_model.predict(_arr, conf=0.2, verbose=False)[0]
 
             _ax = _axes_flat[_i]
             _ax.imshow(_arr)
 
-            for _box in _preds.boxes:
-                _x1, _y1, _x2, _y2 = _box.xyxy[0].tolist()
-                _conf = float(_box.conf[0])
-                _cls  = int(_box.cls[0])
-                _col  = ["#E74C3C", "#3498DB", "#F39C12"][_cls % 3]
-                _ax.add_patch(mpatches.Rectangle(
-                    (_x1, _y1), _x2 - _x1, _y2 - _y1,
-                    linewidth=2, edgecolor=_col, facecolor="none",
-                ))
-                _ax.text(_x1, _y1 - 4, f"{_conf:.2f}", fontsize=7, color=_col)
+            _boxes = [b.xyxy[0].tolist() for b in _preds.boxes]
+            _labels = [str(int(b.cls[0])) for b in _preds.boxes]
+            _scores = [float(b.conf[0]) for b in _preds.boxes]
+            _colors = [_COLORS[int(b.cls[0]) % 3] for b in _preds.boxes]
+            draw_boxes(_ax, _boxes, _labels, _scores, color=_colors)
 
             _ax.set_title(_p.name, fontsize=7)
             _ax.axis("off")
@@ -927,9 +871,9 @@ def _evaluate(Image, YOLO_DIR, mpatches, np, plt, yolo_model):
 
 
 @app.cell(hide_code=True)
-def _step13_md(mo):
+def _step12_md(mo):
     mo.md(r"""
-    ### Step 13 — SAHI with your fine-tuned model
+    ### Step 12 — SAHI with your fine-tuned model
 
     The real power of SAHI comes when you combine it with a domain-specific
     detector. Your fine-tuned YOLOv8 knows your target classes. SAHI lets
@@ -944,14 +888,14 @@ def _step13_md(mo):
 
 
 @app.cell
-def _sahi_finetuned(DATA_DIR, Image, YOLO_DIR, mpatches, np, plt):
+def _sahi_finetuned(DATA_DIR, Image, YOLO_DIR, draw_boxes, np, plt):
     from sahi import AutoDetectionModel
     from sahi.predict import get_prediction, get_sliced_prediction
 
     _best_weights = YOLO_DIR / "runs" / "train" / "weights" / "best.pt"
 
     if not _best_weights.exists():
-        print("No trained weights found — run Step 11 first.")
+        print("No trained weights found — run Step 10 first.")
     else:
         _custom_sahi = AutoDetectionModel.from_pretrained(
             model_type="yolov8",
@@ -997,21 +941,12 @@ def _sahi_finetuned(DATA_DIR, Image, YOLO_DIR, mpatches, np, plt):
                 (_axes[1], _sliced, "Fine-tuned — SAHI sliced"),
             ]:
                 _ax.imshow(_arr)
-                for _pred in _res.object_prediction_list:
-                    _bb = _pred.bbox
-                    _x1, _y1 = _bb.minx, _bb.miny
-                    _x2, _y2 = _bb.maxx, _bb.maxy
-                    _ax.add_patch(mpatches.Rectangle(
-                        (_x1, _y1), _x2 - _x1, _y2 - _y1,
-                        linewidth=1.5, edgecolor="#2ECC71", facecolor="none",
-                    ))
-                    _ax.text(
-                        _x1, _y1 - 3,
-                        f"{_pred.category.name} {_pred.score.value:.2f}",
-                        fontsize=6, color="#2ECC71", fontweight="bold",
-                    )
-                _n = len(_res.object_prediction_list)
-                _ax.set_title(f"{_title} ({_n} hits)", fontsize=9)
+                _boxes = [(p.bbox.minx, p.bbox.miny, p.bbox.maxx, p.bbox.maxy)
+                          for p in _res.object_prediction_list]
+                _labels = [p.category.name for p in _res.object_prediction_list]
+                _scores = [p.score.value for p in _res.object_prediction_list]
+                draw_boxes(_ax, _boxes, _labels, _scores, color="#2ECC71")
+                _ax.set_title(f"{_title} ({len(_boxes)} hits)", fontsize=9)
                 _ax.axis("off")
 
             plt.suptitle(
@@ -1049,11 +984,10 @@ def _exercise(mo):
        - Switch postprocess from NMS to NMM. What happens to overlapping detections?
 
     4. **Training data size** — Your custom model was trained on very few images.
-       After adding more annotations from p2, re-run Step 11. Does mAP improve?
-       How many images do you need before it approaches MegaDetector performance?
+       After adding more annotations from P2, re-run Step 10. Does mAP improve?
 
     5. **Fine-tuned SAHI** — Compare the COCO-pretrained SAHI results (Step 7)
-       with your fine-tuned SAHI results (Step 13). Does domain-specific training
+       with your fine-tuned SAHI results (Step 12). Does domain-specific training
        help even with SAHI's tiling strategy?
 
     6. **MegaDetector on aerial imagery** — Run MegaDetector on one HerdNet tile

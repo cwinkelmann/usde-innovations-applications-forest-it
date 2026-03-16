@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Local object detection trainer — RTX 4080 optimised.
+Local object detection trainer — works on CUDA, MPS (Apple Silicon), and CPU.
 Supports: RTDETRv2, YOLOS, DETR and any AutoModelForObjectDetection-compatible checkpoint.
 Dataset format: COCO JSON (train/ and val/ splits with images/ and annotations.json).
 Logging: WandB and/or TensorBoard.
@@ -22,12 +22,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import albumentations as A
 import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
-from torchmetrics.detection import MeanAveragePrecision
 from transformers import (
     AutoImageProcessor,
     AutoModelForObjectDetection,
@@ -66,6 +64,32 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+# ─── AUGMENTATION ────────────────────────────────────────────────────────────
+
+def build_transforms(size: int, augment: bool):
+    """Build albumentations transforms compatible with albumentations >= 2.0."""
+    import albumentations as A
+
+    bbox_params = A.BboxParams(
+        format="coco",
+        label_fields=["category_ids"],
+        min_visibility=0.3,
+    )
+    if augment:
+        return A.Compose([
+            A.RandomResizedCrop(size=(size, size), scale=(0.5, 1.0)),
+            A.HorizontalFlip(p=0.5),
+            A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, p=0.6),
+            A.GaussianBlur(blur_limit=(3, 5), p=0.1),
+        ], bbox_params=bbox_params)
+    else:
+        return A.Compose([
+            A.LongestMaxSize(max_size=size),
+            A.PadIfNeeded(min_height=size, min_width=size,
+                          border_mode=0, fill=(128, 128, 128)),
+        ], bbox_params=bbox_params)
+
+
 # ─── DATASET ──────────────────────────────────────────────────────────────────
 
 class CocoDetectionDataset(Dataset):
@@ -91,8 +115,12 @@ class CocoDetectionDataset(Dataset):
 
         self.images = {img["id"]: img for img in coco["images"]}
         self.categories = {cat["id"]: cat["name"] for cat in coco["categories"]}
-        self.id2label = {int(k): v for k, v in self.categories.items()}
-        self.label2id = {v: int(k) for k, v in self.id2label.items()}
+
+        # Build 0-indexed label mappings (model output indices)
+        sorted_cat_ids = sorted(self.categories.keys())
+        self._cat_id_to_contiguous = {cid: i for i, cid in enumerate(sorted_cat_ids)}
+        self.id2label = {i: self.categories[cid] for i, cid in enumerate(sorted_cat_ids)}
+        self.label2id = {v: k for k, v in self.id2label.items()}
 
         # Group annotations by image id
         self.annotations: dict[int, list] = {img_id: [] for img_id in self.images}
@@ -101,28 +129,7 @@ class CocoDetectionDataset(Dataset):
 
         self.image_ids = sorted(self.images.keys())
 
-        self.transforms = self._build_transforms(image_size, augment)
-
-    def _build_transforms(self, size: int, augment: bool) -> A.Compose:
-        bbox_params = A.BboxParams(
-            format="coco",
-            label_fields=["category_ids"],
-            min_visibility=0.3,
-        )
-        if augment:
-            return A.Compose([
-                A.RandomResizedCrop(height=size, width=size, scale=(0.5, 1.0)),
-                A.HorizontalFlip(p=0.5),
-                A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, p=0.6),
-                A.GaussNoise(var_limit=(5, 25), p=0.2),
-                A.Blur(blur_limit=3, p=0.1),
-            ], bbox_params=bbox_params)
-        else:
-            return A.Compose([
-                A.LongestMaxSize(max_size=size),
-                A.PadIfNeeded(min_height=size, min_width=size,
-                              border_mode=0, value=(128, 128, 128)),
-            ], bbox_params=bbox_params)
+        self.transforms = build_transforms(image_size, augment)
 
     def __len__(self) -> int:
         return len(self.image_ids)
@@ -138,35 +145,34 @@ class CocoDetectionDataset(Dataset):
         anns = self.annotations[image_id]
         bboxes = [a["bbox"] for a in anns]          # [x, y, w, h]
         category_ids = [a["category_id"] for a in anns]
-        area = [a.get("area", a["bbox"][2] * a["bbox"][3]) for a in anns]
-        iscrowd = [a.get("iscrowd", 0) for a in anns]
 
         # Filter out zero-area boxes
-        valid = [(b, c, ar, ic) for b, c, ar, ic in
-                 zip(bboxes, category_ids, area, iscrowd)
+        valid = [(b, c) for b, c in zip(bboxes, category_ids)
                  if b[2] > 1 and b[3] > 1]
         if valid:
-            bboxes, category_ids, area, iscrowd = zip(*valid)
+            bboxes, category_ids = zip(*valid)
+            bboxes, category_ids = list(bboxes), list(category_ids)
         else:
-            bboxes, category_ids, area, iscrowd = [], [], [], []
+            bboxes, category_ids = [], []
 
         if bboxes:
             transformed = self.transforms(
                 image=image_np,
-                bboxes=list(bboxes),
-                category_ids=list(category_ids),
+                bboxes=bboxes,
+                category_ids=category_ids,
             )
             image_np = transformed["image"]
             bboxes = list(transformed["bboxes"])
             category_ids = list(transformed["category_ids"])
 
-        # Build COCO-style target for the processor
+        # Build COCO-style target for the processor.
+        # Remap category_ids to 0-indexed contiguous indices.
         target = {
             "image_id": image_id,
             "annotations": [
                 {
                     "image_id": image_id,
-                    "category_id": cat_id,
+                    "category_id": self._cat_id_to_contiguous[cat_id],
                     "bbox": list(bbox),
                     "area": bbox[2] * bbox[3],
                     "iscrowd": 0,
@@ -180,8 +186,18 @@ class CocoDetectionDataset(Dataset):
             annotations=target,
             return_tensors="pt",
         )
-        # Squeeze batch dimension added by processor
-        return {k: v.squeeze(0) for k, v in encoding.items()}
+
+        # The processor returns pixel_values as [1, C, H, W] and labels as a list
+        # of dicts. Squeeze the batch dim from tensors, keep labels as-is.
+        result = {}
+        for k, v in encoding.items():
+            if isinstance(v, torch.Tensor):
+                result[k] = v.squeeze(0)
+            elif isinstance(v, list) and len(v) == 1:
+                result[k] = v[0]  # unwrap single-element list (labels)
+            else:
+                result[k] = v
+        return result
 
 
 def collate_fn(batch):
@@ -193,6 +209,7 @@ def collate_fn(batch):
 # ─── METRICS ──────────────────────────────────────────────────────────────────
 
 def build_compute_metrics(processor):
+    from torchmetrics.detection import MeanAveragePrecision
     metric = MeanAveragePrecision(box_format="xyxy", iou_type="bbox")
 
     def compute_metrics(eval_pred):
@@ -200,7 +217,6 @@ def build_compute_metrics(processor):
 
         preds_list, targets_list = [], []
         for i in range(len(labels["class_labels"])):
-            # Convert model logits to predictions
             scores = torch.tensor(logits_labels[i]).softmax(-1)
             pred_scores, pred_labels = scores.max(-1)
 
@@ -245,16 +261,28 @@ def box_cxcywh_to_xyxy(boxes: torch.Tensor) -> torch.Tensor:
 def main():
     args = parse_args()
 
-    # ── Validate GPU ──────────────────────────────────────────────────────────
-    if not torch.cuda.is_available():
-        sys.exit("❌  No CUDA GPU found. Set CUDA_VISIBLE_DEVICES or check drivers.")
-    print(f"✅  GPU: {torch.cuda.get_device_name(0)}  "
-          f"({torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB VRAM)")
+    # ── Detect device ────────────────────────────────────────────────────────
+    if torch.cuda.is_available():
+        device_name = torch.cuda.get_device_name(0)
+        vram = torch.cuda.get_device_properties(0).total_mem / 1e9
+        print(f"GPU: {device_name} ({vram:.1f} GB VRAM)")
+        use_bf16 = True
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        print("GPU: Apple MPS (Metal Performance Shaders)")
+        use_bf16 = False  # MPS does not support bf16
+        # Some ops (e.g. grid_sampler_2d_backward in RT-DETR) are not implemented
+        # on MPS. Enable CPU fallback for those ops.
+        os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+    else:
+        print("No GPU found — training on CPU (will be slow)")
+        use_bf16 = False
 
     # ── Load processor & model ────────────────────────────────────────────────
-    print(f"\n⬇  Loading processor and model: {args.model}")
+    print(f"\nLoading processor and model: {args.model}")
     processor = AutoImageProcessor.from_pretrained(
-        args.model, size={"shortest_edge": args.image_size}
+        args.model,
+        size={"height": args.image_size, "width": args.image_size},
+        use_fast=False,
     )
 
     # Load dataset first to get category mapping
@@ -275,8 +303,11 @@ def main():
     )
 
     if args.gradient_checkpointing:
-        model.gradient_checkpointing_enable()
-        print("   Gradient checkpointing: ON")
+        try:
+            model.gradient_checkpointing_enable()
+            print("   Gradient checkpointing: ON")
+        except ValueError:
+            print("   Gradient checkpointing: not supported by this model, skipping")
 
     # ── Logging setup ─────────────────────────────────────────────────────────
     report_to = args.log if args.log else ["none"]
@@ -293,10 +324,11 @@ def main():
     training_args = TrainingArguments(
         output_dir=args.output_dir,
 
-        # Hardware
-        bf16=True,                           # RTX 4080 supports bf16
+        # Hardware — auto-adapts to CUDA / MPS / CPU
+        bf16=use_bf16,
+        fp16=False,
         dataloader_num_workers=args.num_workers,
-        dataloader_pin_memory=True,
+        dataloader_pin_memory=torch.cuda.is_available(),
 
         # Schedule
         num_train_epochs=args.epochs,
@@ -317,7 +349,6 @@ def main():
         greater_is_better=True,
 
         # Logging
-        logging_dir=os.path.join(args.output_dir, "runs"),
         logging_steps=10,
         report_to=report_to,
         run_name=args.wandb_run,
@@ -338,23 +369,23 @@ def main():
         eval_dataset=val_ds,
         data_collator=collate_fn,
         compute_metrics=build_compute_metrics(processor),
-        tokenizer=processor,    # ensures processor is saved with checkpoint
+        processing_class=processor,
     )
 
     # ── Train ─────────────────────────────────────────────────────────────────
-    print(f"\n🚀  Starting training — {args.epochs} epochs, "
-          f"batch {args.batch_size} × {args.grad_accum} grad_accum\n")
+    print(f"\nStarting training — {args.epochs} epochs, "
+          f"batch {args.batch_size} x {args.grad_accum} grad_accum\n")
     trainer.train(resume_from_checkpoint=args.resume)
 
     # ── Save final model ──────────────────────────────────────────────────────
     final_dir = os.path.join(args.output_dir, "final")
     trainer.save_model(final_dir)
     processor.save_pretrained(final_dir)
-    print(f"\n✅  Model saved to {final_dir}")
+    print(f"\nModel saved to {final_dir}")
 
     # ── Final eval ────────────────────────────────────────────────────────────
     metrics = trainer.evaluate()
-    print("\n📊  Final validation metrics:")
+    print("\nFinal validation metrics:")
     for k, v in metrics.items():
         print(f"   {k}: {v:.4f}" if isinstance(v, float) else f"   {k}: {v}")
 

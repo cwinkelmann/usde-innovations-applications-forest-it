@@ -236,6 +236,25 @@ def download_caltech(n_images: int = 50) -> None:
     print(f"  Done. Images in {out_dir}")
 
 
+def download_eikelboom() -> None:
+    """Eikelboom 2019 — aerial wildlife detection dataset from HuggingFace."""
+    out = BASE_DIR / "eikelboom"
+    print("\n=== Eikelboom 2019 (aerial wildlife, 3 species) ===")
+    snapshot_download(
+        repo_id="karisu/Eikelboom2019",
+        repo_type="dataset",
+        local_dir=str(out),
+    )
+    print(f"  Saved to {out}")
+
+    # Count what we got
+    for split in ["train", "val", "test"]:
+        split_dir = out / split
+        if split_dir.exists():
+            imgs = list(split_dir.glob("*.jpg")) + list(split_dir.glob("*.png"))
+            print(f"  {split}: {len(imgs)} images")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Download Week 1 datasets",
@@ -256,6 +275,7 @@ def main() -> None:
     download_general_dataset(full=args.full)
     download_serengeti(n_images=n)
     download_caltech(n_images=n)
+    download_eikelboom()
 
     print("\n" + "=" * 50)
     print("Week 1 datasets ready.")
@@ -263,6 +283,7 @@ def main() -> None:
     print(f"  camera_trap/serengeti_subset/  ← {n} Serengeti images")
     print(f"  camera_trap/caltech_subset/    ← {n} Caltech images")
     print(f"  camera_trap_labels.csv         ← P6 reference labels")
+    print(f"  eikelboom/          ← Eikelboom 2019 aerial drone data")
     print()
     print("Still needed (manual copy from C. Winkelmann):")
     print("  iguanas/tiles/       ← ~500 iguana tile JPEGs")

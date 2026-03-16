@@ -22,6 +22,7 @@ dependencies = [
     "megadetector",
     "sahi",
     "ultralytics",
+    "accelerate>=1.1.0"
 ]
 
 [project.optional-dependencies]

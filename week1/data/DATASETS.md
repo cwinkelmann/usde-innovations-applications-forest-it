@@ -12,6 +12,7 @@ This document maps datasets to practicals and explains the rationale for each ch
 | **Iguanas From Above** | Aerial drone | 57,838 tiles | Points + counts (CC-BY) | CC-BY 4.0 | P1, P2, case study |
 | **Snapshot Serengeti** (subset) | Camera trap | ~5,000 imgs | Species labels + boxes | CDLA Permissive | P3, P4 |
 | **Caltech Camera Traps** (subset) | Camera trap | ~2,000 imgs | Bounding boxes | CDLA Permissive | P5, P6 |
+| **Eikelboom 2019** | Aerial drone | 561 imgs | Bounding boxes (3 species) | CC-BY 4.0 | P3 (SAHI), tiling demo |
 
 ---
 
@@ -281,6 +282,53 @@ print(f"Done. Images in {OUTPUT_DIR}")
 - **P5** — animal crops for classifier inference (geographically distinct from P3/P4
   data → tests classifier generalisation)
 - **P6** — evaluation against labelled reference set (boxes available as ground truth)
+
+---
+
+## 5 — Eikelboom 2019 — Aerial Wildlife Detection
+
+**Source:** https://huggingface.co/datasets/karisu/Eikelboom2019
+**Original archive:** https://data.4tu.nl/articles/_/12713903/1
+**Citation:** Eikelboom, J. A. J., Wind, J., van de Ven, E., Kenana, L. M., Schroder, B., de Knegt, H. J., van Langevelde, F., & Prins, H. H. T. (2019). Improving the precision and accuracy of animal population estimates with aerial image object detection. *Methods in Ecology and Evolution*, 10(11), 1875–1887. https://doi.org/10.1111/2041-210X.13277
+**License:** CC-BY 4.0
+
+Aerial drone survey images from Kenya with bounding-box annotations for three large
+mammal species. The images are high-resolution full-frame drone captures — ideal for
+demonstrating tiled inference with SAHI, as animals appear small relative to the frame.
+
+**Contents:**
+
+| Split | Images | Annotations |
+|-------|-------:|------------:|
+| train | 393    | 8,981       |
+| val   | 56     | 451         |
+| test  | 112    | 849         |
+
+**Species:** Elephant, Zebra, Giraffe
+
+**Annotation format:** CSV, no header — `filename, x1, y1, x2, y2, class`
+Coordinates are pixel-level bounding boxes in Pascal VOC format (x1, y1 = top-left; x2, y2 = bottom-right).
+
+**Model weights included:** `resnet50_csv_36.h5` — RetinaNet (Keras/TensorFlow) from the original paper.
+
+**Download:**
+```python
+from huggingface_hub import snapshot_download
+
+snapshot_download(
+    repo_id="karisu/Eikelboom2019",
+    repo_type="dataset",
+    local_dir="week1/data/eikelboom",
+)
+```
+
+**Use in course:**
+- **P3** — full-frame drone images for SAHI tiled inference demonstration
+  (animals are small → full-image detection misses them → SAHI recovers detections)
+- **Tiling demo** — slice into 640×640 tiles, keep only tiles containing objects
+  with ≥50% bbox overlap
+- **Comparison** — bounding-box (Eikelboom/YOLO) vs point-based (HerdNet) detection
+  on aerial imagery
 
 ---
 
