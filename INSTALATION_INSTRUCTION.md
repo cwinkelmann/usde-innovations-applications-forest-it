@@ -50,6 +50,8 @@ tiled inference, classification, and segmentation.
 conda create -n fit-megadetector python=3.11 -y
 conda activate fit-megadetector
 
+# TODO install using pyproject.toml
+
 # PyTorch (CPU is fine for practicals; add cuda channel if you have a GPU)
 conda install -c pytorch -c conda-forge pytorch torchvision -y
 
@@ -87,7 +89,7 @@ This is the only environment that needs GDAL and the geospatial stack.
 ```bash
 conda create -n fit-herdnet python=3.11 -y
 conda activate fit-herdnet
-
+# TODO install using pyproject.toml 
 # PyTorch
 conda install -c pytorch -c conda-forge pytorch torchvision -y
 
