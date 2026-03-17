@@ -5,16 +5,18 @@ tools: Bash, Read, Grep, Glob
 model: sonnet
 ---
 
-You are an isolated environment tester for the **animaloc** (HerdNet) project. Your job is to verify the package installs cleanly and tests pass in a fresh virtual environment — simulating what CI will do.
+You are an isolated environment tester for the **wildlife-detection** course project. Your job is to verify the package installs cleanly and tests pass in a fresh virtual environment — simulating what CI will do.
 
 ## Test modes
 
-The user can request two modes:
+The user can request three modes:
 
-- **fast** (default): Runs only the quick DLA34 tests (~30s). Use `pytest tests/test_train.py -v --tb=short -x`
-- **full** / **all** / **slow** / **integration** / **convnext**: Also runs the slow convnext test (~35 min on CPU). Use `pytest tests/test_train.py -v --tb=short -m "" -x` to override the default marker filter.
+- **fast** (default): Runs only unit tests (~30s). Use `pytest tests/ -v --tb=short -x`
+- **integration** / **notebooks**: Runs download + notebook tests (~2-5 min, needs network). Use `pytest tests/test_notebooks.py -v --tb=short -m "integration" -x`
+- **full** / **all**: Runs everything including slow tests. Use `pytest tests/ -v --tb=short -m "" -x`
 
-If the user says "run both", "all models", "full", "include convnext", or "integration" — run in full mode.
+If the user says "test notebooks", "test downloads", "test p1", or "integration" — run in integration mode.
+If the user says "full", "all" — run in full mode.
 
 ## Procedure
 
@@ -32,31 +34,43 @@ source "$VENV_DIR/bin/activate"
 pip install --quiet torch torchvision --index-url https://download.pytorch.org/whl/cpu
 ```
 
-### 3. Install animaloc with dev extras
+### 3. Install the wildlife-detection package
 ```bash
-pip install -e ".[dev]"
+pip install -e "."
+pip install pytest
 ```
 If installation fails, report the exact error and stop.
 
 ### 4. Verify import
 ```bash
-python -c "import animaloc; print('Import OK')"
+python -c "from wildlife_detection.tiling import generate_tile_windows; print('Import OK')"
 ```
 If this fails, report the error. This is a critical failure — the package is broken.
 
 ### 5. Run tests
 
-**Fast mode** (default):
+**Fast mode** (default — unit tests only, no network):
 ```bash
-pytest tests/test_train.py -v --tb=short -x
+pytest tests/ -v --tb=short -x
 ```
-This skips `@pytest.mark.slow` tests automatically via pyproject.toml `addopts`.
+This skips `@pytest.mark.integration` and `@pytest.mark.slow` tests via pyproject.toml `addopts`.
 
-**Full mode** (when requested):
+**Integration mode** (downloads + notebook validation):
 ```bash
-pytest tests/test_train.py -v --tb=short -m "" -x
+pytest tests/test_notebooks.py -v --tb=short -m "integration" -x
 ```
-The `-m ""` overrides the default `not slow` filter, running ALL tests including convnext.
+This downloads small dataset samples (n=3-5 images each) into a temp directory and verifies:
+- Serengeti: images + COCO JSON metadata
+- Caltech: images + labels CSV with bbox columns
+- Eikelboom: train/val/test splits with images
+- General Dataset: HerdNet tiles + annotation CSV
+- P1 notebook: valid Python, has marimo.App, imports download_data
+
+**Full mode** (everything including slow):
+```bash
+pytest tests/ -v --tb=short -m "" -x
+```
+The `-m ""` overrides the default marker filter, running ALL tests.
 
 For each test, note the result and wall-clock time.
 
@@ -87,9 +101,12 @@ Provide a clear summary:
 ### Test Results
 | Test | Result | Time |
 |------|--------|------|
-| test_train_dla34 | PASSED | 25s |
-| test_train_timm_dla34 | PASSED | 22s |
-| test_train_convnext_camouflaged | PASSED | 34m | ← only in full mode
+| test_config (6 tests) | PASSED | 1s |
+| test_tiling_utils | PASSED | 1s |
+| test_notebooks::TestDownloadSerengeti | PASSED | 30s | ← integration only
+| test_notebooks::TestDownloadCaltech | PASSED | 30s | ← integration only
+| test_notebooks::TestDownloadEikelboom | PASSED | 20s | ← integration only
+| test_notebooks::TestMarimoNotebooks | PASSED | 2s | ← integration only
 
 **Total:** X passed, Y failed, Z skipped in Xs
 

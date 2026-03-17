@@ -60,6 +60,18 @@ courses. The exercise_designer_agent creates tasks at basic through advanced lev
 Build a complete teaching module on active learning for wildlife detection, including lecture
 notes, exercises, and practical lab instructions using HILDA and CVAT/Label Studio.
 
+## Does NOT Trigger
+
+| If the user wants... | Use this skill instead |
+|---|---|
+| Train/fine-tune a detection model (code) | herdnet-training or wildlife-classification |
+| Run MegaDetector inference | megadetector |
+| Tiled inference on large images | sahi-inference |
+| Course material from thesis/defence slides | iguana-case-study |
+| Annotation tool setup only (no active learning loop) | iguana-case-study (create-practical) |
+
+---
+
 ## Key Facts: Active Learning for Wildlife
 
 ### The Core Loop

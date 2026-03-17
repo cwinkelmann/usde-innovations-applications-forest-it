@@ -56,6 +56,18 @@ pip install sahi[huggingface]  # HuggingFace transformers
 
 ---
 
+## Does NOT Trigger
+
+| If the user wants... | Use this skill instead |
+|---|---|
+| Point-based heatmap detection (HerdNet Stitcher/LMDS) | herdnet-training |
+| Model training or fine-tuning | herdnet-training or wildlife-classification |
+| Single-image MegaDetector inference (no tiling) | megadetector |
+| Course material from iguana case study | iguana-case-study |
+| Active learning sample selection | active-learning-wildlife |
+
+---
+
 ## Core API
 
 ### AutoDetectionModel

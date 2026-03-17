@@ -7,6 +7,13 @@ Course Materials for the Innovations and Applications of Forest IT (FIT) Module,
 If you are a student, please fill out the form before Day 1:
 https://docs.google.com/forms/d/1DyRN7uuO4OkgGec36HOZ5IznJmNb4vsA1yPgev4bLHY/edit
 
+### Quick Links
+
+| Document | What it covers |
+|----------|---------------|
+| **[Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)** | Environment setup — **read this before Day 1** |
+| **[Course Layout](./Course_layout.md)** | Day-by-day schedule, lecture topics, and practicals |
+
 ---
 
 ## TL;DR
@@ -22,7 +29,7 @@ By the end of the course you will be able to:
 
 - Run **MegaDetector** on camera trap images, interpret its confidence scores, and
   extract animal crops for downstream classification
-- Apply a **pre-trained image classifier** (EfficientNet / timm) to identify species
+- Apply a **pre-trained image classifier** (timm / DeepFaune) to identify species
   from crops, and evaluate its performance honestly
 - Understand how **point-based detectors** like HerdNet count animals in dense aerial
   imagery without bounding box annotations
@@ -36,16 +43,6 @@ from scratch. The goal is tool fluency and conceptual literacy — understanding
 these models do, how to run them, and how to evaluate their outputs for real ecological
 applications.
 
-
-## Course Structure
-# FIT — Forest IT: AI & UAV Wildlife Monitoring
-
-**Module:** Innovations and Applications of Forest IT  
-**Institution:** HNEE — Eberswalde University for Sustainable Development  
-**Teaching team:** J.-P. Mund & C. Winkelmann  
-**Dates:** March 30 – April 10, 2026
-
----
 
 ## What This Repository Is
 
@@ -88,18 +85,16 @@ Biosphere Reserves — combining Sentinel-1 SAR data with change detection metho
 
 ## Repository Structure
 ```
-Course_layout.md          ← Master course schedule and pedagogical structure
+INSTALLATION_INSTRUCTIONS.md  ← How to set up your environment (read before Day 1)
+Course_layout.md              ← Master course schedule and pedagogical structure
 week1/
-  lectures/               ← Slide decks and lecture notes (Week 1)
-  practicals/             ← Jupyter notebooks and exercise scripts
-  data/                   ← Sample datasets for practicals (or download scripts)
+  lectures/                   ← Slide decks and lecture notes (Week 1)
+  practicals/                 ← Marimo notebooks and exercise scripts
+  data/                       ← Sample datasets for practicals (or download scripts)
 week2/
-  lectures/               ← Slide decks and lecture notes (Week 2)
-  practicals/             ← Jupyter notebooks and exercise scripts
+  lectures/                   ← Slide decks and lecture notes (Week 2)
+  practicals/                 ← Marimo notebooks and exercise scripts
   data/
-shared/
-  environment.yml         ← Conda environment for all practicals
-  setup_instructions.md   ← How to get everything running on day 1
 ```
 
 ---
@@ -119,11 +114,7 @@ By the end of the module, students will be able to:
 
 ## Practical Environment
 
-All practicals run in Python. Set up your environment once before Day 1:
-```bash
-conda env create -f shared/environment.yml
-conda activate fit-module
-```
+All practicals run in Python. Follow the **[Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)** to set up your environment before Day 1. The course uses two conda environments to avoid dependency conflicts — the installation guide explains which environment to use for each practical.
 
 Key packages used across the module:
 
@@ -169,12 +160,20 @@ This repository is actively developed alongside the course. If you are a student
 and find an error or want to suggest an improvement, open an issue or contact the
 teaching team directly.
 
-**J.-P. Mund** — module lead  
-**C. Winkelmann** — practical sessions (Week 1)  
+**J.-P. Mund** — module lead
+**C. Winkelmann** — practical sessions (Week 1)
 **N. Voss & A. Bosu** — radar remote sensing (Week 2)
 
+---
 
-## Table of Contents
+# Reference Material
+
+The sections below are a compendium of background material, literature, and tools
+covered in the lectures. You do not need to read this to get started — it is here
+for reference during and after the course.
+
+<details>
+<summary><strong>Table of Contents</strong></summary>
 
 1. [Who is this for?](#who-is-this-for)
 2. [Why Wildlife Detection?](#why-wildlife-detection)
@@ -202,6 +201,8 @@ teaching team directly.
 17. [Case Study — Galápagos Marine Iguana Detection](#case-study--galápagos-marine-iguana-detection)
 18. [Conference Highlights — ICTC 2026](#conference-highlights--ictc-2026)
 19. [Further Reading & Tools](#further-reading--tools)
+
+</details>
 
 ---
 

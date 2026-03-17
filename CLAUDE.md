@@ -31,12 +31,12 @@ Target layout (see `Course_layout.md` for day-by-day detail):
 README.md                       ← course overview & literature
 Course_layout.md                ← full schedule (source of truth for practicals)
 CLAUDE.md                       ← this file
-INSTALATION_INSTRUCTION.md
+INSTALLATION_INSTRUCTIONS.md
 
 week1/
   lectures/                     ← slide decks and lecture notes
   practicals/                   ← Marimo notebooks (one per practical block)
-    p1_drone_imagery.py         ← Practical 1: explore aerial wildlife dataset (tiles + annotations)
+    p1_visual_image_dataset.py         ← Practical 1: explore visual wildlife datasets from camera traps and aerial platforms (annotations)
     p2_annotation_tools.py      ← Practical 2: point / box / polygon annotation demo
     p3_megadetector.py          ← Practical 3: run MegaDetector, parse JSON output, fine tune a model
     p4_detection_exploration.py ← Practical 4: browse detections, failure modes
@@ -89,7 +89,7 @@ Each notebook must run top-to-bottom without errors on the shared conda environm
 | Pipeline walkthrough notebook | `notebooks/01_pipeline_walkthrough.ipynb` | done |
 | Unit tests | `tests/` | done |
 | `Course_layout.md` | root | done |
-| Setup instructions | `INSTALATION_INSTRUCTION.md` | partial |
+| Setup instructions | `INSTALLATION_INSTRUCTIONS.md` | partial |
 
 ---
 
@@ -116,7 +116,7 @@ Radar lead: N. Voss & A. Bosu.
 ### Shared Environment
 
 - `shared/environment.yml` — single conda env covering both weeks (TODO)
-- `shared/setup_instructions.md` — consolidate from `INSTALATION_INSTRUCTION.md` (TODO)
+- `shared/setup_instructions.md` — consolidate from `INSTALLATION_INSTRUCTIONS.md` (TODO)
 
 ### Sample Datasets
 

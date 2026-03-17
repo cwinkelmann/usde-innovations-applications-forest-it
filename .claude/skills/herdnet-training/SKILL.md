@@ -3,6 +3,17 @@
 ## Trigger Keywords
 HerdNet, animaloc, FIDT, point detection, wildlife counting, DLA-34, DLA-60, DLA-102, DLA-169, DINOv2, HerdNetStitcher, LMDS, Hann window, patcher, CSVDataset, aerial wildlife, density map, focal inverse distance transform, drone counting, iguana detection, point annotation, HerdNetEvaluator, HerdNetLMDS, tile inference, overlapping patches, down_ratio, head_conv, matching_radius, ObjectAwareRandomCrop, FocalLoss, LossWrapper, warmup_iters, backbone_lr
 
+## Does NOT Trigger
+
+| If the user wants... | Use this skill instead |
+|---|---|
+| Species classification (post-detection) | wildlife-classification |
+| Tiled bounding-box inference via SAHI | sahi-inference |
+| MegaDetector on camera trap images | megadetector |
+| Course material from thesis/defence slides | iguana-case-study |
+| PCV curriculum adaptation | practical-cv-wildlife |
+| Active learning loop orchestration | active-learning-wildlife |
+
 ## Description
 This skill covers the full lifecycle of training HerdNet point-detection models using the `animaloc` package. HerdNet is a two-headed CNN architecture for simultaneously localizing and classifying animals in aerial imagery. It produces a localization heatmap via Focal Inverse Distance Transform (FIDT) maps and a classification map, enabling accurate counting and species identification from drone orthomosaics.
 

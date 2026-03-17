@@ -23,6 +23,7 @@ A suite of Claude Code skills for academic research, paper writing, peer review,
 | `herdnet-training` v1.0 | HerdNet/animaloc point detection training lifecycle | train-from-scratch, fine-tune, inference-only, diagnose-training, explain-concept, create-exercise, full-course-module |
 | `sahi-inference` v1.0 | SAHI tiled inference for large drone/satellite imagery | generate-code, explain-concept, optimize-pipeline, create-exercise, full-course-module |
 | `active-learning-wildlife` v1.0 | Active learning loop with HILDA (CVAT/Label Studio) | setup-workflow, explain-concept, select-strategy, create-exercise, full-course-module |
+| `iguana-case-study` v1.0 | Course material from Winkelmann (2025) thesis & defence slides | create-lecture, create-practical, create-exercise, create-exam, extract-figures, summarize-topic |
 
 ## Routing Rules
 
@@ -61,6 +62,11 @@ A suite of Claude Code skills for academic research, paper writing, peer review,
     - `sahi-inference` vs `herdnet-training`: Compare box-based (SAHI+YOLO) vs heatmap-based (HerdNet Stitcher) tiled inference
     - `active-learning-wildlife` → `herdnet-training`: Active learning loop with HerdNet as the retrained model
     - `active-learning-wildlife` → `wildlife-classification`: Active learning for species classifier improvement
+    - `iguana-case-study` → any skill: Case study material that references specific tools can hand off to the corresponding skill for code generation
+    - `iguana-case-study` + `herdnet-training`: Case study context + HerdNet training code
+    - `iguana-case-study` + `practical-cv-wildlife`: Case study exercises adapted into PCV bridge modules
+
+13. **iguana-case-study**: Trigger for generating course material (lectures, practicals, exercises, exam questions) from the Winkelmann (2025) master thesis and defence slides. Source material lives outside this repo at `/Users/christian/PycharmProjects/hnee/defence_master_thesis/` and `/Users/christian/PycharmProjects/hnee/master_thesis_latex/`. Does NOT generate training code — use `herdnet-training` for that. Does NOT run MegaDetector — use `megadetector` for that.
 
 ## Key Rules
 

@@ -101,8 +101,6 @@ first_level = int(np.log2(down_ratio)) - 1
 first_level = int(np.log2(down_ratio)) - 2
 # Minimum DR=4 for ConvNext
 
-# For EfficientNet backbones:
-first_level = int(np.log2(down_ratio)) - 1
 ```
 
 ## DLAUp: Feature Fusion
