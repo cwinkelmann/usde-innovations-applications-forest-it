@@ -1,28 +1,8 @@
 # Installation Instructions
 
-This course uses **three separate conda environments** to avoid dependency conflicts
-between MegaDetector, HerdNet, and the geospatial pipeline. Install only the one(s)
-you need for the practicals you are running.
-
----
-
-## Why separate environments?
-
-| Conflict | Reason |
-|----------|--------|
-| MegaDetector vs HerdNet | PytorchWildlife pins specific YOLO versions that conflict with the `animaloc` package |
-| GDAL / rasterio | Must be installed via conda, not pip — installing via pip breaks other packages |
-| `geo2ml` | Not on PyPI; requires GDAL already present before it can be installed |
-
----
-
-## Environment overview
-
-| Environment | Used for | Approx. size |
-|-------------|----------|--------------|
-| `fit-geo` | Tiling, data prep, annotation tools (P1, P2) | ~1 GB |
-| `fit-megadetector` | MegaDetector + classification practicals (P3–P6, P7) | ~4 GB |
-| `fit-herdnet` | HerdNet training and the HerdNet notebook | ~5 GB |
+This course uses **two conda environments** to avoid dependency conflicts
+between the MegaDetector/YOLO stack and HerdNet. Practicals 1–2 need only
+basic Python packages and run in either environment.
 
 ---
 
@@ -30,66 +10,59 @@ you need for the practicals you are running.
 
 - [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or Anaconda
 - Git
-- ~10 GB free disk space for all three environments
+- ~10 GB free disk space for both environments + datasets
 
 ---
 
-## 1 — `fit-geo` (tiling + data prep)
+## Which environment for which practical?
 
-Lightest environment. Used for P1, P2, and running `download_data.py`.
-
-```bash
-conda create -n fit-geo python=3.11 -y
-conda activate fit-geo
-
-# Geospatial stack — GDAL must come from conda, not pip
-conda install -c conda-forge gdal rasterio geopandas fiona shapely -y
-
-# Python packages
-pip install numpy pandas pillow scipy matplotlib tqdm marimo jupyterlab
-pip install omegaconf python-dotenv huggingface_hub
-
-# geo2ml — not on PyPI; install after GDAL is present in the environment
-pip install --no-build-isolation git+https://github.com/mayrajeo/geo2ml.git
-
-# This project (tiling utilities)
-git clone <repo-url> && cd usde-innovations-applications-forest-it
-pip install -e "."
-```
-
-Verify:
-```bash
-python -c "import rasterio, geopandas, geo2ml, wildlife_detection; print('fit-geo OK')"
-```
+| Practical | Environment | Why |
+|-----------|-------------|-----|
+| P1 — Drone imagery | `fit-megadetector` | Only needs numpy, pandas, matplotlib, PIL |
+| P2 — Annotation tools | `fit-megadetector` | Adds Label Studio (included in env) |
+| P3 — MegaDetector & SAHI | `fit-megadetector` | megadetector, ultralytics, sahi |
+| P4 — Detection exploration | `fit-megadetector` | matplotlib, pandas |
+| P5 — Classifier (timm) | `fit-megadetector` | timm, torch |
+| P6 — Evaluation | `fit-megadetector` | sklearn |
+| P7 — Segmentation (SAM) | `fit-megadetector` | segment-anything, torch |
+| P8 — Wrap-up | `fit-megadetector` | — |
+| HerdNet notebook | `fit-herdnet` | animaloc, GDAL, rasterio |
+| Pipeline scripts (01–06) | `fit-herdnet` | animaloc, geospatial stack |
 
 ---
 
-## 2 — `fit-megadetector` (MegaDetector + classification)
+## Why separate environments?
 
-Used for P3, P4, P5, P6, P7 (SAM).
+| Conflict | Reason |
+|----------|--------|
+| MegaDetector vs HerdNet | The `megadetector` package pins specific YOLO versions that conflict with `animaloc` |
+| GDAL / rasterio | Must be installed via conda, not pip — pip installs break other packages. Only needed for HerdNet/geospatial work |
+
+---
+
+## 1 — `fit-megadetector` (Practicals 1–8)
+
+This is the main environment for Week 1. It covers everything from data
+exploration (P1) through MegaDetector inference, YOLO fine-tuning, SAHI
+tiled inference, classification, and segmentation.
 
 ```bash
 conda create -n fit-megadetector python=3.11 -y
 conda activate fit-megadetector
 
-# Geospatial stack
-conda install -c conda-forge gdal rasterio geopandas fiona shapely -y
-
-# PyTorch — conda resolves the right build for your platform (CPU / CUDA / Apple Silicon)
+# PyTorch (CPU is fine for practicals; add cuda channel if you have a GPU)
 conda install -c pytorch -c conda-forge pytorch torchvision -y
 
-# Wildlife tools
-pip install PytorchWildlife       # MegaDetector v5 + ReID
-pip install timm                  # pre-trained classification models
-pip install segment-anything      # SAM
+# MegaDetector + detection pipeline
+pip install megadetector ultralytics sahi
 
-# Download SAM weights (vit_b ~375 MB) and place in week1/data/:
-#   https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth
+# Classification & segmentation
+pip install timm segment-anything
 
-# Utilities
-pip install numpy pandas pillow matplotlib scikit-learn tqdm marimo jupyterlab
-pip install omegaconf python-dotenv huggingface_hub
-
+# Data exploration & annotation
+pip install numpy pandas pillow scipy matplotlib tqdm
+pip install marimo jupyterlab label-studio
+pip install huggingface_hub requests python-dotenv
 
 # This project
 pip install -e "."
@@ -98,27 +71,28 @@ pip install -e "."
 Verify:
 ```bash
 python -c "
-from PytorchWildlife.models import detection as pw_detection
-import timm, segment_anything
+from megadetector.detection.run_detector import load_detector
+import ultralytics, sahi, timm
 print('fit-megadetector OK')
 "
 ```
 
 ---
 
-## 3 — `fit-herdnet` (HerdNet training)
+## 2 — `fit-herdnet` (HerdNet training & geospatial pipeline)
 
 Used for the HerdNet notebook and `scripts/06_train_herdnet.py`.
+This is the only environment that needs GDAL and the geospatial stack.
 
 ```bash
 conda create -n fit-herdnet python=3.11 -y
 conda activate fit-herdnet
 
-# Geospatial stack
-conda install -c conda-forge gdal rasterio geopandas fiona shapely -y
-
 # PyTorch
 conda install -c pytorch -c conda-forge pytorch torchvision -y
+
+# Geospatial stack — MUST be installed via conda, not pip
+conda install -c conda-forge gdal rasterio geopandas fiona shapely -y
 
 # HerdNet (animaloc) — install from the course fork
 git clone https://github.com/cwinkelmann/HerdNet.git
@@ -126,7 +100,6 @@ pip install -e ./HerdNet
 
 # Training utilities
 pip install albumentations wandb omegaconf
-
 
 # Utilities
 pip install numpy pandas pillow scipy matplotlib tqdm marimo jupyterlab
@@ -146,20 +119,43 @@ print(f'fit-herdnet OK  (animaloc {animaloc.__version__})')
 "
 ```
 
+### A note on geospatial packages
+
+The `fit-herdnet` environment installs GDAL, rasterio, and geopandas because
+HerdNet works with GeoTIFF orthomosaics and needs coordinate transformations.
+You do **not** need these packages for Practicals 1–8 — the `fit-megadetector`
+environment handles those without any geospatial dependencies.
+
+If you are only running the Week 1 practicals and not the HerdNet pipeline,
+you can skip this environment entirely.
+
+---
+
+## Downloading datasets
+
+All Week 1 datasets are downloaded by the script `week1/data/download_data.py`
+or automatically by the first cell in Practical 1.
+
+```bash
+conda activate fit-megadetector
+cd week1/data
+
+# Minimal set for quick testing (~500 MB)
+python download_data.py --sample
+
+# Full teaching subsets (~5 GB)
+python download_data.py --full
+```
+
+See `DATASETS.md` for a full description of each dataset and where it is used.
+
 ---
 
 ## Installing `wildlife-detection` (this project)
 
-`pip install -e ".[all]"` installs the `wildlife_detection` Python package in
+`pip install -e "."` installs the `wildlife_detection` Python package in
 editable mode from `pyproject.toml`. This makes the tiling utilities, training
 helpers, and config loader importable from any notebook or script.
-
-The only prerequisite is GDAL installed via conda (required by `rasterio`):
-
-```bash
-conda install -c conda-forge gdal rasterio geopandas -y
-pip install -e ".[all]"
-```
 
 Optional extras defined in `pyproject.toml`:
 
@@ -168,6 +164,9 @@ pip install -e ".[yolo]"          # YOLOv8 only
 pip install -e ".[segmentation]"  # segmentation-models-pytorch + transformers
 pip install -e ".[all]"           # everything
 ```
+
+The `[all]` extra is only needed in the `fit-herdnet` environment.
+For `fit-megadetector`, a plain `pip install -e "."` is sufficient.
 
 ---
 
@@ -179,35 +178,15 @@ From the repo root with any environment active:
 pytest tests/ -v
 ```
 
-Expected result: **46 passed, 1 failed** (`test_empty_tile_count_zero` — known
-test naming bug, does not affect runtime behaviour).
-
 ---
 
 ## Running a Marimo notebook
 
 ```bash
-conda activate fit-megadetector          # use the right env for the practical
-marimo edit week1/practicals/p3_megadetector.py   # interactive editing
-marimo run  week1/practicals/p3_megadetector.py   # read-only app mode
+conda activate fit-megadetector
+marimo edit week1/practicals/p1_drone_imagery.py    # interactive editing
+marimo run  week1/practicals/p1_drone_imagery.py    # read-only app mode
 ```
-
----
-
-## Which environment for which practical?
-
-| Practical | Environment |
-|-----------|-------------|
-| P1 — Drone imagery | `fit-geo` |
-| P2 — Annotation tools | `fit-geo` |
-| P3 — MegaDetector | `fit-megadetector` |
-| P4 — Detection exploration | `fit-megadetector` |
-| P5 — Classifier (timm) | `fit-megadetector` |
-| P6 — Evaluation | `fit-megadetector` |
-| P7 — Segmentation (SAM) | `fit-megadetector` |
-| P8 — Wrap-up | `fit-megadetector` |
-| HerdNet notebook | `fit-herdnet` |
-| Pipeline scripts (01–06) | `fit-herdnet` |
 
 ---
 
@@ -225,3 +204,10 @@ the conda build is compiled for arm64.
 **MegaDetector weights not downloading**
 The model (~600 MB) downloads to `~/.cache/huggingface/` on first use.
 Check your internet connection and that `huggingface_hub` is installed.
+
+**Label Studio won't start**
+```bash
+label-studio start              # default port 8080
+label-studio start --port 8081  # if 8080 is busy
+```
+On Windows, run in a standard terminal, not WSL.

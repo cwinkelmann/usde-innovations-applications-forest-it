@@ -624,6 +624,96 @@ def _part3_header(mo):
 
 
 @app.cell(hide_code=True)
+def _bbox_formats_md(mo):
+    mo.md(r"""
+    ### Bounding box format conversions
+
+    Before preparing YOLO training labels, you need to understand the three
+    common bounding box formats. All store the same rectangle, just differently:
+
+    | Format | Values | Used by |
+    |--------|--------|---------|
+    | **COCO** | `[x, y, w, h]` — top-left corner + width/height, pixel units | LILA datasets, COCO benchmark, Label Studio export |
+    | **YOLO** | `[cx, cy, w, h]` — centre + size, **normalised** 0–1 | YOLOv5/v8 training labels |
+    | **Pascal VOC** | `[x1, y1, x2, y2]` — top-left and bottom-right corners, pixel units | VOC XML files, torchvision |
+
+    MegaDetector outputs normalised `[x, y, w, h]` (COCO-like but 0–1 scaled).
+    YOLO training expects normalised centre-format. The conversion is straightforward.
+    """)
+    return
+
+
+@app.cell
+def _bbox_conversions(DATA_DIR, Image, np, plt):
+    # ── Conversion functions ──────────────────────────────────────────────────
+
+    def coco_to_yolo(x, y, w, h, img_w, img_h):
+        """COCO [x,y,w,h] → YOLO normalised [cx,cy,w,h]."""
+        return (x + w / 2) / img_w, (y + h / 2) / img_h, w / img_w, h / img_h
+
+    def yolo_to_coco(cx, cy, w, h, img_w, img_h):
+        """YOLO normalised [cx,cy,w,h] → COCO pixel [x,y,w,h]."""
+        pw, ph = w * img_w, h * img_h
+        return cx * img_w - pw / 2, cy * img_h - ph / 2, pw, ph
+
+    def coco_to_voc(x, y, w, h):
+        """COCO [x,y,w,h] → Pascal VOC [x1,y1,x2,y2]."""
+        return x, y, x + w, y + h
+
+    def voc_to_coco(x1, y1, x2, y2):
+        """Pascal VOC [x1,y1,x2,y2] → COCO [x,y,w,h]."""
+        return x1, y1, x2 - x1, y2 - y1
+
+    # ── Demo on first Caltech image with a bbox ──────────────────────────────
+    import pandas as _pd
+    import matplotlib.patches as _patches
+
+    _caltech_csv = DATA_DIR / "camera_trap_labels.csv"
+    if _caltech_csv.exists():
+        _df = _pd.read_csv(_caltech_csv).dropna(subset=["bbox_x"])
+        if len(_df) > 0:
+            _row = _df.iloc[0]
+            _path = DATA_DIR / "camera_trap" / "caltech_subset" / _row["crop"]
+            if _path.exists():
+                _img = np.array(Image.open(_path))
+                _H, _W = _img.shape[:2]
+
+                _x, _y, _w, _h = _row["bbox_x"], _row["bbox_y"], _row["bbox_w"], _row["bbox_h"]
+                _cx, _cy, _wn, _hn = coco_to_yolo(_x, _y, _w, _h, _W, _H)
+                _x1, _y1, _x2, _y2 = coco_to_voc(_x, _y, _w, _h)
+
+                print(f"Image     : {_row['crop']}  ({_W}x{_H} px)  species: {_row['true_label']}")
+                print(f"COCO      : x={_x:.1f}  y={_y:.1f}  w={_w:.1f}  h={_h:.1f}")
+                print(f"YOLO      : cx={_cx:.4f}  cy={_cy:.4f}  w={_wn:.4f}  h={_hn:.4f}")
+                print(f"Pascal VOC: x1={_x1:.1f}  y1={_y1:.1f}  x2={_x2:.1f}  y2={_y2:.1f}")
+
+                _fig, _axes = plt.subplots(1, 3, figsize=(13, 4))
+                _titles = ["COCO  [x, y, w, h]", "YOLO  [cx, cy, w, h] norm.", "Pascal VOC  [x1, y1, x2, y2]"]
+
+                for _ax, _title in zip(_axes, _titles):
+                    _ax.imshow(_img)
+                    _ax.set_title(_title, fontsize=9)
+                    _ax.axis("off")
+
+                _axes[0].add_patch(_patches.Rectangle((_x, _y), _w, _h,
+                    linewidth=2, edgecolor="lime", facecolor="none"))
+
+                _xc, _yc, _wc, _hc = yolo_to_coco(_cx, _cy, _wn, _hn, _W, _H)
+                _axes[1].add_patch(_patches.Rectangle((_xc, _yc), _wc, _hc,
+                    linewidth=2, edgecolor="cyan", facecolor="none"))
+                _axes[1].plot(_cx * _W, _cy * _H, "c+", markersize=12, markeredgewidth=2)
+
+                _axes[2].add_patch(_patches.Rectangle((_x1, _y1), _x2 - _x1, _y2 - _y1,
+                    linewidth=2, edgecolor="orange", facecolor="none"))
+
+                plt.suptitle("Same box — three formats", fontsize=12)
+                plt.tight_layout()
+
+    plt.gca()
+    return
+
+
+@app.cell(hide_code=True)
 def _step9_md(mo):
     mo.md(r"""
     ### Step 9 — Prepare training data

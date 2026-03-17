@@ -325,6 +325,10 @@ def _(mo):
 
     Bounding boxes are the annotation type MegaDetector outputs (Practical 3).
     Seeing ground-truth boxes now helps you judge detector quality later.
+
+    You will learn about different bbox formats (COCO, YOLO, Pascal VOC) and
+    how to convert between them in **Practical 3, Step 9** when you prepare
+    YOLO training labels.
     """)
     return
 
@@ -363,7 +367,7 @@ def _(DATA_BASE, Image, caltech_df, np, plt):
             _ax.set_title(
                 f"{_row['true_label']}\n"
                 f"({int(_row['bbox_x'])}, {int(_row['bbox_y'])}) "
-                f"{int(_row['bbox_w'])}×{int(_row['bbox_h'])} px",
+                f"{int(_row['bbox_w'])}x{int(_row['bbox_h'])} px",
                 fontsize=8,
             )
             _ax.axis("off")
@@ -377,93 +381,6 @@ def _(DATA_BASE, Image, caltech_df, np, plt):
             f"({len(_with_box)}/{len(caltech_df)} images have boxes)",
             fontsize=11,
         )
-        plt.tight_layout()
-    plt.gca()
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    ### Step 5 — Bounding box format conversions
-
-    Three formats are in common use. All store the same rectangle, just differently:
-
-    | Format | Values | Used by |
-    |--------|--------|---------|
-    | **COCO** | `[x, y, w, h]` — top-left corner + width/height, pixel units | LILA datasets, COCO benchmark |
-    | **YOLO** | `[cx, cy, w, h]` — centre + size, **normalised** 0–1 | YOLOv5/v8 training labels |
-    | **Pascal VOC** | `[x1, y1, x2, y2]` — top-left and bottom-right corners, pixel units | VOC XML files, torchvision |
-
-    The cell below defines conversion helpers and demonstrates them on the first
-    Caltech image that has a bounding box.
-    """)
-    return
-
-
-@app.cell
-def _(DATA_BASE, Image, caltech_df, np, plt):
-    # ── Conversion functions ──────────────────────────────────────────────────
-
-    def coco_to_yolo(x, y, w, h, img_w, img_h):
-        """COCO [x,y,w,h] → YOLO normalised [cx,cy,w,h]."""
-        return (x + w / 2) / img_w, (y + h / 2) / img_h, w / img_w, h / img_h
-
-    def yolo_to_coco(cx, cy, w, h, img_w, img_h):
-        """YOLO normalised [cx,cy,w,h] → COCO pixel [x,y,w,h]."""
-        pw, ph = w * img_w, h * img_h
-        return cx * img_w - pw / 2, cy * img_h - ph / 2, pw, ph
-
-    def coco_to_voc(x, y, w, h):
-        """COCO [x,y,w,h] → Pascal VOC [x1,y1,x2,y2]."""
-        return x, y, x + w, y + h
-
-    def voc_to_coco(x1, y1, x2, y2):
-        """Pascal VOC [x1,y1,x2,y2] → COCO [x,y,w,h]."""
-        return x1, y1, x2 - x1, y2 - y1
-
-    # ── Demo on first image with a bbox ──────────────────────────────────────
-    if caltech_df is not None:
-        import matplotlib.patches as _patches
-
-        _row = caltech_df.dropna(subset=["bbox_x"]).iloc[0]
-        _path = DATA_BASE / "camera_trap" / "caltech_subset" / _row["crop"]
-        _img = np.array(Image.open(_path))
-        _H, _W = _img.shape[:2]
-
-        _x, _y, _w, _h = _row["bbox_x"], _row["bbox_y"], _row["bbox_w"], _row["bbox_h"]
-        _cx, _cy, _wn, _hn = coco_to_yolo(_x, _y, _w, _h, _W, _H)
-        _x1, _y1, _x2, _y2 = coco_to_voc(_x, _y, _w, _h)
-
-        print(f"Image     : {_row['crop']}  ({_W}×{_H} px)  species: {_row['true_label']}")
-        print(f"COCO      : x={_x:.1f}  y={_y:.1f}  w={_w:.1f}  h={_h:.1f}")
-        print(f"YOLO      : cx={_cx:.4f}  cy={_cy:.4f}  w={_wn:.4f}  h={_hn:.4f}")
-        print(f"Pascal VOC: x1={_x1:.1f}  y1={_y1:.1f}  x2={_x2:.1f}  y2={_y2:.1f}")
-
-        _fig, _axes = plt.subplots(1, 3, figsize=(13, 4))
-        _titles = ["COCO  [x, y, w, h]", "YOLO  [cx, cy, w, h] norm.", "Pascal VOC  [x1, y1, x2, y2]"]
-        _colors = ["lime", "cyan", "orange"]
-
-        for _ax, _title, _col in zip(_axes, _titles, _colors):
-            _ax.imshow(_img)
-            _ax.set_title(_title, fontsize=9)
-            _ax.axis("off")
-
-        # COCO box
-        _axes[0].add_patch(_patches.Rectangle((_x, _y), _w, _h,
-            linewidth=2, edgecolor="lime", facecolor="none"))
-
-        # YOLO box (convert back to pixels for display)
-        _xc, _yc, _wc, _hc = yolo_to_coco(_cx, _cy, _wn, _hn, _W, _H)
-        _axes[1].add_patch(_patches.Rectangle((_xc, _yc), _wc, _hc,
-            linewidth=2, edgecolor="cyan", facecolor="none"))
-        _axes[1].plot(_cx * _W, _cy * _H, "c+", markersize=12, markeredgewidth=2)
-
-        # VOC box
-        _axes[2].add_patch(_patches.Rectangle((_x1, _y1), _x2 - _x1, _y2 - _y1,
-            linewidth=2, edgecolor="orange", facecolor="none"))
-
-        plt.suptitle("Same box — three formats", fontsize=12)
         plt.tight_layout()
     plt.gca()
     return
