@@ -132,6 +132,10 @@ def _download_datasets():
     return (DATA_BASE,)
 
 
+# TODO refine the steps above to use the download script, do not implement too much single use code in these notebooks
+# TODO download Eikelboom here
+
+
 @app.cell
 def _load(DATA_BASE, pd):
     DATA_DIR = DATA_BASE / "general_dataset" / "test_sample"
