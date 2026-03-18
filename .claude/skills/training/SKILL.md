@@ -574,6 +574,7 @@ scripts/training/
   train_segmentation.py      ← instance seg (Mask2Former) + semantic seg (SegFormer)
   evaluate_detectors.py      ← compare models: P, R, F1, mAP (any ultralytics .pt)
   calibrate_confidence.py    ← find optimal confidence threshold for animal counting
+  diagnose_training.py       ← detect early dip, overfitting, LR issues; suggest fixes
 ```
 
 Install dependencies:

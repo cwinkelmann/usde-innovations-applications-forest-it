@@ -183,7 +183,11 @@ def parse_args():
                    help="Initial learning rate (default: auto)")
     p.add_argument("--weight_decay", type=float, default=0.0001)
     p.add_argument("--freeze", type=int, default=None,
-                   help="Freeze first N layers")
+                   help="Freeze first N layers (prevents early F1 dip)")
+    p.add_argument("--warmup_epochs", type=float, default=None,
+                   help="LR warmup epochs (default: 3, increase to 5-10 if early dip)")
+    p.add_argument("--patience", type=int, default=None,
+                   help="Early stopping patience (epochs without improvement)")
     p.add_argument("--project", default="output")
     p.add_argument("--name", default=None,
                    help="Run name (default: auto from model name)")
@@ -267,17 +271,40 @@ def main():
     if args.freeze is not None:
         train_kwargs["freeze"] = args.freeze
 
+    if args.warmup_epochs is not None:
+        train_kwargs["warmup_epochs"] = args.warmup_epochs
+
+    if args.patience is not None:
+        train_kwargs["patience"] = args.patience
+
     if args.resume:
         train_kwargs["resume"] = True
 
-    # Logging
+    # Logging — WandB
     if "wandb" in args.log:
-        os.environ["WANDB_PROJECT"] = args.wandb_project
-        if args.wandb_run:
-            os.environ["WANDB_NAME"] = args.wandb_run
+        import wandb as wb
+
+        # Init wandb BEFORE ultralytics does — ultralytics checks `if not wb.run`
+        # and reuses our run. This lets us control the project name independently
+        # of the local --project directory.
+        run_name = args.wandb_run or args.name
+        wb.init(
+            project=args.wandb_project,
+            name=run_name,
+            config={
+                "model": args.model,
+                "epochs": args.epochs,
+                "batch": args.batch,
+                "imgsz": args.imgsz,
+                "lr0": args.lr0,
+                "weight_decay": args.weight_decay,
+                "freeze": args.freeze,
+                "architecture": "RT-DETR" if rtdetr else "YOLO",
+            },
+        )
 
         # Inject F1 into trainer.metrics so ultralytics' own wandb callback logs it
-        # alongside P, R, mAP in the same step (appears as a chart in WandB)
+        # alongside P, R, mAP in the same wb.run.log() call
         def inject_f1_callback(trainer):
             try:
                 p = trainer.metrics.get("metrics/precision(B)", 0)
@@ -287,10 +314,9 @@ def main():
             except Exception:
                 pass
 
-        # on_fit_epoch_end fires BEFORE ultralytics' wandb callback, so F1
-        # will be included in the same wb.run.log() call
         model.add_callback("on_fit_epoch_end", inject_f1_callback)
-        print("WandB logging enabled (P, R, F1, mAP, loss curves)")
+        print(f"WandB: project={args.wandb_project}, run={run_name}")
+        print("  Logging: P, R, F1, mAP@0.5, mAP@0.5:0.95, train/val losses")
 
     if "tensorboard" in args.log:
         train_kwargs["tensorboard"] = True

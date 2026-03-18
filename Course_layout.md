@@ -47,16 +47,29 @@ By the end of Week 1, students can:
 ### 13:15–16:00 | Data & Preprocessing Practicals
 *Lead: C. Winkelmann*
 
-**Practical 1 — Getting familiar with drone imagery (90 min)**
-- Working with tiled GeoTIFF/drone imagery in Python or QGIS
-- Understanding resolution, overlap, coordinate systems
-- Exercise: Load an image, tile it, visualise a grid
+**Practical 0 - Setup**
+- Run the initial Notebook
+- Download some datasets
+- Install/use pre-configured environment
+- Run MegaDetector on provided camera trap images
+- Parse JSON output: filter by confidence, extract animal crops
+- Visualise detections with bounding boxes
+
+**Practical 1 — Getting familiar with camera trapping (90 min)**
+
+- apply a trained model on camera trap images
+- sort into empty / animal / person / vehicle
+- crop detections to constant sized
 
 **Practical 2 — Annotation tools intro (45 min)**
-- Quick tour: CVAT or Label Studio
-- What is a point annotation vs. bounding box vs. polygon?
-- Students label 20–30 animals in a sample image (hands-on)
-
+- 
+- Run a species Classification Model on the crops. Which one? Species Net, DeepFaune
+- What MegaDetector *doesn't* do: it detects animals, not species
+- The two-stage pipeline: detect → crop → classify
+- Overview of classification models used in ecology:
+  DeepFaune, Wildlife Insights, iNaturalist CV, custom classifiers
+- What training data looks like; ImageNet vs. domain-specific datasets
+- 
 ---
 
 ## Day 2 — Tuesday, March 31
@@ -64,12 +77,20 @@ By the end of Week 1, students can:
 ### 09:30–12:30 | Camera Traps & MegaDetector (Lecture & Seminar)
 *Lead: J.-P. Mund & C. Winkelmann*
 
-**Block 1 — Camera Trapping 101 (40 min)**
-- How camera traps work: passive IR trigger, deployment strategies
-- The data bottleneck: millions of images, 80%+ empty frames
-- Traditional workflow vs. AI-assisted workflow
+TODO what is part of the lectures?
 
-**Block 2 — MegaDetector Deep Dive (60 min)**
+
+---
+
+### 13:15–16:00 | Data Processing Practicals
+*Lead: C. Winkelmann*
+
+**Practical 1 — From Camera Trapping to Aerial Images (40 min)**
+- Small object detection
+- using slided Inference on Full Images to detect animals
+- 
+
+**Practical 2 — MegaDetector Deep Dive (60 min)**
 - What MegaDetector does: animal / person / vehicle detection
 - How to run it: CameraTraps / `megadetector` Python package, JSON output
 - Interpreting confidence scores; what to do with low-confidence detections
@@ -79,29 +100,13 @@ By the end of Week 1, students can:
 > **Deliberate skip:** We do not cover YOLO architecture internals, anchor boxes,
 > or mAP computation — students use MegaDetector as a tool, not a research object
 
-**Break**
+**Practical 3 — From Detection to Classification (40 min)**
 
-**Block 3 — From Detection to Classification (40 min)**
-- What MegaDetector *doesn't* do: it detects animals, not species
-- The two-stage pipeline: detect → crop → classify
-- Overview of classification models used in ecology:
-  DeepFaune, Wildlife Insights, iNaturalist CV, custom classifiers
-- What training data looks like; ImageNet vs. domain-specific datasets
-
----
-
-### 13:15–16:00 | Data Processing Practicals
-*Lead: C. Winkelmann*
-
-**Practical 3 — Running MegaDetector (90 min)**
-- Install/use pre-configured environment
-- Run MegaDetector on provided camera trap images
-- Parse JSON output: filter by confidence, extract animal crops
-- Visualise detections with bounding boxes
 
 **Practical 4 — Exploration (30 min)**
 - Students browse their detections: what worked, what failed?
 - Common failure modes: motion blur, partial animals, dense vegetation
+- push predictions into label studio to correct them
 
 ---
 
@@ -110,28 +115,7 @@ By the end of Week 1, students can:
 ### 09:30–12:30 | Image Classification for Wildlife (Lecture & Seminar)
 *Lead: J.-P. Mund & C. Winkelmann*
 
-**Block 1 — Classification Concepts (45 min)**
-- What a classifier does: image in → class label out
-- Pre-trained models & transfer learning (conceptual only — no backprop math)
-- Why you don't need to train from scratch: feature reuse
-- Key models in ecology context: EfficientNet, ResNet, DINOv2 (visual intro)
-
-> **Deliberate skip:** We do not cover loss functions, optimisers, or training loops
-> in detail — students run inference on pre-trained models only
-
-**Block 2 — Classifier Workflows in Ecology (45 min)**
-- Species classification with cropped camera trap images
-- Individual re-identification (HotSpotter, re-ID networks) — brief mention
-- Multi-label vs. single-label; handling "unknown" class
-- Confidence thresholds and human-in-the-loop review
-
-**Break**
-
-**Block 3 — UAV Classification at Scale (40 min)**
-- Applying classifiers to drone image tiles (not just crops)
-- Density estimation: from classifications to counts
-- HerdNet as an example: point-supervised counting on UAV imagery
-- Revisit the Iguanas From Above case: full pipeline overview
+TODO 
 
 ---
 
