@@ -53,6 +53,64 @@ Use `gradient_checkpointing=True` when VRAM is tight.
 > **NEVER use `hf_jobs()`.** Do NOT submit to Hugging Face cloud infrastructure.
 > All training MUST run locally via `python` or `uv run`.
 
+### Dataset format conversion
+
+Before training, convert annotations to the format your trainer expects.
+Run `convert_dataset.py` first, then `validate_dataset.py`, then train.
+
+```bash
+# Eikelboom CSV → COCO JSON (for train_detection.py)
+python scripts/training/convert_dataset.py \
+  --from eikelboom-csv \
+  --src  ./week1/data/eikelboom \
+  --dst  ./week1/data/eikelboom_coco
+
+# Generic Pascal VOC CSV (with header) → COCO JSON
+python scripts/training/convert_dataset.py \
+  --from pascal-voc-csv \
+  --src  ./data/my_dataset \
+  --dst  ./data/my_dataset_coco \
+  --csv-train annotations_train.csv \
+  --csv-val   annotations_val.csv \
+  --header
+
+# COCO JSON → YOLO .txt labels
+python scripts/training/convert_dataset.py \
+  --from coco --to yolo \
+  --src ./data/my_coco_dataset \
+  --dst ./data/my_yolo_dataset
+
+# YOLO .txt → COCO JSON
+python scripts/training/convert_dataset.py \
+  --from yolo --to coco \
+  --src ./data/my_yolo_dataset \
+  --dst ./data/my_coco_dataset
+
+# Pascal VOC CSV → YOLO (two-step: CSV → COCO → YOLO)
+python scripts/training/convert_dataset.py \
+  --from pascal-voc-csv --to yolo \
+  --src ./data/my_dataset \
+  --dst ./data/my_yolo_dataset
+
+# Use --symlink to avoid copying images (saves disk space)
+python scripts/training/convert_dataset.py \
+  --from eikelboom-csv \
+  --src ./week1/data/eikelboom \
+  --dst ./week1/data/eikelboom_coco \
+  --symlink
+```
+
+Supported format pairs:
+
+| Source | Target | Notes |
+|--------|--------|-------|
+| `eikelboom-csv` | `coco` | No-header CSV: `filepath,x1,y1,x2,y2,class` |
+| `pascal-voc-csv` | `coco` | Same as above, supports `--header` flag |
+| `coco` | `yolo` | COCO `[x,y,w,h]` → YOLO normalised `cx cy w h` |
+| `yolo` | `coco` | Requires `dataset.yaml` with class names |
+| `eikelboom-csv` | `yolo` | Two-step: CSV → temp COCO → YOLO |
+| `pascal-voc-csv` | `yolo` | Two-step: CSV → temp COCO → YOLO |
+
 ### YOLOv8 (Ultralytics) — simplest path for detection
 
 ```bash
@@ -439,15 +497,66 @@ Both can be enabled simultaneously for Transformers trainers: `--log wandb tenso
 
 ---
 
+## MDV6 RT-DETR fine-tuning (PytorchWildlife)
+
+Fine-tune MegaDetector V6 (Apache RT-DETR) on custom COCO-format datasets.
+Uses the raw lyuwenyu RT-DETR model loaded via PytorchWildlife's YAMLConfig (before `.deploy()`).
+
+**Requires `fit-mdv6` conda environment** with PytorchWildlife + albumentations + torchmetrics.
+
+| Model variant         | Backbone   | Params | Recommended batch | VRAM usage |
+|-----------------------|------------|--------|-------------------|------------|
+| `MDV6-apa-rtdetr-e`   | ResNet-101 | 76.4M  | 4–8               | ~12–14 GB  |
+| `MDV6-apa-rtdetr-c`   | ResNet-18  | 20.2M  | 8–16              | ~6–8 GB    |
+
+```bash
+# Fine-tune MDV6-e on COCO-format dataset
+/home/christian/anaconda3/envs/fit-mdv6/bin/python scripts/training/train_mdv6_rtdetr.py \
+  --model_version MDV6-apa-rtdetr-e \
+  --dataset_dir ./week1/data/eikelboom_coco_tiled \
+  --output_dir ./output/mdv6_finetune \
+  --epochs 50 --batch_size 8 --lr 1e-4 --lr_backbone 0.1 \
+  --freeze_backbone 5
+
+# Quick 2-epoch smoke test
+/home/christian/anaconda3/envs/fit-mdv6/bin/python scripts/training/train_mdv6_rtdetr.py \
+  --model_version MDV6-apa-rtdetr-e \
+  --dataset_dir ./week1/data/eikelboom_coco_tiled \
+  --output_dir ./output/mdv6_finetune_test \
+  --epochs 2 --batch_size 4
+
+# Eval only (with EMA weights)
+/home/christian/anaconda3/envs/fit-mdv6/bin/python scripts/training/train_mdv6_rtdetr.py \
+  --model_version MDV6-apa-rtdetr-e \
+  --dataset_dir ./week1/data/eikelboom_coco_tiled \
+  --output_dir ./output/mdv6_finetune \
+  --eval_only --resume ./output/mdv6_finetune/best_epoch*.pth
+```
+
+Key features:
+- Discriminative LR: backbone trained at `lr × lr_backbone` (default 0.1×)
+- EMA weight averaging (decay=0.9999, on by default)
+- Backbone freezing for first N epochs
+- bf16 mixed precision on CUDA
+- Saves checkpoints in lyuwenyu format (`{'ema': {'module': ...}, 'model': ...}`)
+- Supports denoising training (contrastive denoising queries)
+
+---
+
 ## File index
 
 ```
 scripts/training/
-  train_yolo.py              ← YOLOv8 detection (Ultralytics API, SAHI support)
+  convert_dataset.py         ← format converter (VOC CSV / COCO / YOLO)
+  validate_dataset.py        ← pre-flight checker for all five task types
   train_detection.py         ← object detection (RTDETRv2, YOLOS, DETR — Transformers)
+  train_mdv6_rtdetr.py       ← MDV6 RT-DETR fine-tuning (PytorchWildlife, custom loop)
   train_classification.py    ← image classification (ViT, DINOv2, MobileViT, ResNet)
   train_segmentation.py      ← instance seg (Mask2Former) + semantic seg (SegFormer)
-  validate_dataset.py        ← pre-flight checker for all five task types
+  evaluate_detectors.py      ← compare models: P, R, F1, mAP (MDV6 + YOLO)
+
+src/wildlife_detection/training/
+  rtdetr_criterion.py        ← RT-DETR loss: HungarianMatcher + RTDETRCriterionv2
 ```
 
 Install dependencies:
@@ -460,6 +569,9 @@ pip install ultralytics
 
 # SAHI (optional, for tiled inference)
 pip install sahi
+
+# MDV6 RT-DETR (requires fit-mdv6 conda env)
+pip install PytorchWildlife albumentations torchmetrics
 
 # Transformers trainers
 pip install transformers datasets timm torchmetrics pycocotools \

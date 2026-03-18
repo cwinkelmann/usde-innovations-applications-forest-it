@@ -22,6 +22,11 @@ python week1/data/download_data.py --n-images 20  # exact count per source
 | [Eikelboom 2019](https://huggingface.co/datasets/karisu/Eikelboom2019) | HuggingFace | YOLO bboxes (3 species) | CC-BY 4.0 | P1, P3 (SAHI) |
 | [HerdNet pretrained weights](https://huggingface.co/karisu/HerdNet) | HuggingFace | `.pth` checkpoint | — | HerdNet notebook |
 
+### Generale good sources for Datasets
+Tree Crown Deliniateion - canpoyRS https://github.com/hugobaudchon/CanopyRS https://huggingface.co/CanopyRS 
+https://lila.science/otherdatasets/
+
+
 ---
 
 ## Practical-to-Dataset Mapping

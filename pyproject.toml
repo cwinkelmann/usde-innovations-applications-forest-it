@@ -5,43 +5,69 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "wildlife-detection"
 version = "0.1.0"
-description = "Aerial wildlife detection pipeline for drone imagery"
+description = "Aerial wildlife detection pipeline for visual images"
 requires-python = ">=3.10"
+
+# Base dependencies — packages that coexist without conflicts.
+# PyTorch must be installed via conda BEFORE `pip install -e "."`.
+# megadetector, label-studio, and wandb have protobuf conflicts
+# and must be installed via optional extras (see below).
 dependencies = [
     "numpy",
     "pillow",
     "pandas",
-    "omegaconf",
-    "wandb",
-    "torch",
-    "torchvision",
     "scipy",
+    "matplotlib",
+    "tqdm",
     "marimo",
-    "label-studio",
     "albumentations",
-    "megadetector",
-    "sahi",
-    "ultralytics",
-    "accelerate>=1.1.0",
     "huggingface_hub",
-    "pytest"
+    "requests",
+    "python-dotenv",
 ]
 
 [project.optional-dependencies]
-yolo = ["ultralytics"]
-segmentation = ["segmentation-models-pytorch", "transformers"]
-all = [
+
+# MegaDetector environment (P3–P6): megadetector pins protobuf<=3.20.1,
+# which conflicts with wandb and label-studio. Install in its own env.
+megadetector = [
+    "megadetector",
+    "sahi",
+    "timm",
+]
+
+# Label Studio for annotation (P2): needs protobuf>=6.31.1,
+# conflicts with megadetector. Best run via Docker instead:
+#   docker run -p 8080:8080 humansignal/label-studio
+labelstudio = [
+    "label-studio",
+]
+
+# Experiment tracking: wandb needs protobuf>4.21.0,
+# conflicts with megadetector's protobuf<=3.20.1
+tracking = [
+    "wandb",
+    "omegaconf",
+]
+
+# YOLOv8 training (mainline ultralytics, separate from megadetector's fork)
+yolo = [
     "ultralytics",
+]
+
+# Segmentation models (P7, HerdNet pipeline)
+segmentation = [
     "segmentation-models-pytorch",
     "transformers",
 ]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-m 'not integration and not slow'"
-markers = [
-    "integration: tests that download data or hit external services (deselect with '-m \"not integration\"')",
-    "slow: tests that take more than a minute (deselect with '-m \"not slow\"')",
+# HerdNet environment: tracking + segmentation + training utilities.
+# Does NOT include megadetector (they conflict via ultralytics forks).
+# GDAL/rasterio must be installed via conda before this.
+herdnet = [
+    "wildlife-detection[tracking,segmentation]",
+    "omegaconf",
+    "accelerate>=1.1.0",
 ]
 
 [tool.setuptools.packages.find]

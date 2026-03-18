@@ -84,6 +84,9 @@ User Input
 
 ## Key Facts (agents must know these)
 
+### Setup
+Installation issues covered in MegaDetectorSetup.md
+
 ### Model Versions
 - **MDV5A** (recommended): YOLOv5, image_size=1280, confidence threshold 0.2
 - **MDV5B**: Alternative training data, same architecture

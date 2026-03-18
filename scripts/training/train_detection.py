@@ -213,7 +213,39 @@ def build_compute_metrics(processor):
     metric = MeanAveragePrecision(box_format="xyxy", iou_type="bbox")
 
     def compute_metrics(eval_pred):
-        (logits_boxes, logits_labels), labels = eval_pred
+        # Transformers v5+ passes EvalPrediction with .predictions and .label_ids
+        # predictions can be a tuple of varying length depending on model
+        predictions = eval_pred.predictions
+        labels = eval_pred.label_ids
+
+        # Extract logits — predictions is a tuple/list of arrays
+        # For DETR-family: (logits, pred_boxes) or more elements
+        if isinstance(predictions, (tuple, list)):
+            # Find the logits (class scores) and boxes by shape
+            # logits shape: (batch, num_queries, num_classes)
+            # boxes shape: (batch, num_queries, 4)
+            logits_labels = None
+            logits_boxes = None
+            for p in predictions:
+                if hasattr(p, 'shape') and len(p.shape) == 3:
+                    if p.shape[-1] == 4:
+                        logits_boxes = p
+                    else:
+                        logits_labels = p
+                elif isinstance(p, np.ndarray) and p.ndim == 3:
+                    if p.shape[-1] == 4:
+                        logits_boxes = p
+                    else:
+                        logits_labels = p
+        else:
+            return {"mAP@0.5": 0.0, "mAP@0.5:0.95": 0.0, "mAR@100": 0.0}
+
+        if logits_labels is None or logits_boxes is None:
+            return {"mAP@0.5": 0.0, "mAP@0.5:0.95": 0.0, "mAR@100": 0.0}
+
+        # labels is a dict with 'class_labels' and 'boxes'
+        if not isinstance(labels, dict) or "class_labels" not in labels:
+            return {"mAP@0.5": 0.0, "mAP@0.5:0.95": 0.0, "mAR@100": 0.0}
 
         preds_list, targets_list = [], []
         for i in range(len(labels["class_labels"])):
@@ -264,7 +296,7 @@ def main():
     # ── Detect device ────────────────────────────────────────────────────────
     if torch.cuda.is_available():
         device_name = torch.cuda.get_device_name(0)
-        vram = torch.cuda.get_device_properties(0).total_mem / 1e9
+        vram = torch.cuda.get_device_properties(0).total_memory / 1e9
         print(f"GPU: {device_name} ({vram:.1f} GB VRAM)")
         use_bf16 = True
     elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():

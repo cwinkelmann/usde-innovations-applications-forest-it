@@ -44,6 +44,27 @@ these models do, how to run them, and how to evaluate their outputs for real eco
 applications.
 
 
+## Prerequisites
+In order to get started quickly please come prepared with some preparations made. This will help you focus on the wildlife detection part.
+
+### Software environment: 
+
+* setup up your python environment like you did in the previous semesters. Conda is preferred, in order to get GDAL and other tools working.  
+
+* to get access to Datasets and Models, get yourself an accoung for huggingface: https://huggingface.co/
+* to track the performance of trained models get yourself an account for https://wandb.ai/ 
+
+
+## Course Structure
+# FIT — Forest IT: AI & UAV Wildlife Monitoring
+
+**Module:** Innovations and Applications of Forest IT  
+**Institution:** HNEE — Eberswalde University for Sustainable Development  
+**Teaching team:** J.-P. Mund & C. Winkelmann  
+**Dates:** March 30 – April 10, 2026
+
+---
+
 ## What This Repository Is
 
 This repo contains the course materials, lecture structure, and practical exercises
@@ -704,6 +725,7 @@ Integrates with PyTorch Wildlife.
 | Beery et al. (2019) — MegaDetector | Eliminated ~80% of empty camera-trap images at 0.93+ AP, generalizing to unseen species without retraining | [10.48550/arXiv.1907.06772](https://doi.org/10.48550/arXiv.1907.06772) |
 | Gadot et al. (2024) — SpeciesNet | Adding a detection stage before classification gives ~25% macro-F1 gain, scaling to 2,000+ taxa across 65M+ images | [10.1049/cvi2.12318](https://doi.org/10.1049/cvi2.12318) |
 | Rigoudy et al. (2023) — DeepFaune | 26 European species classified at 0.97 validation accuracy with precision and recall >0.90 on independent datasets | [10.1007/s10344-023-01742-7](https://doi.org/10.1007/s10344-023-01742-7) |
+# TODO https://github.com/lyuwenyu/RT-DETR 
 
 #### Reviews & Perspectives
 
