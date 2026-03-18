@@ -2,13 +2,13 @@
 name: local-vision-trainer
 description: >
   Train and fine-tune computer vision models locally on a CUDA GPU (optimised for RTX 4080 / 16 GB VRAM).
-  Supports YOLOv8 detection (Ultralytics API), Transformers-based detection (RTDETRv2, YOLOS, DETR),
+  Supports MegaDetector fine-tuning (MD1000-larch, MD1000-sorrel, MDV6-rtdetr-c via train_megadetector.py),
+  YOLOv8 detection, Transformers-based detection (RTDETRv2, YOLOS, DETR),
   image classification (ViT, DINOv2, MobileViT, ResNet via timm/transformers), and segmentation
-  (Mask2Former, SegFormer). YOLOv8 training accepts YOLO .txt or COCO JSON format (auto-converted).
-  Optional SAHI tiled inference after YOLO training for large images.
-  Logs to WandB and/or TensorBoard. No cloud infrastructure — runs entirely on the local machine.
-  Use when the user mentions training a vision model, fine-tuning a detector, YOLO, YOLOv8,
-  COCO dataset, bounding box training, image classification, or local GPU training.
+  (Mask2Former, SegFormer). Logs to WandB and/or TensorBoard.
+  No cloud infrastructure — runs entirely on the local machine.
+  Use when the user mentions training a vision model, fine-tuning a detector, MegaDetector,
+  YOLO, YOLOv8, COCO dataset, bounding box training, image classification, or local GPU training.
 ---
 
 # Local Vision Trainer Skill
@@ -31,6 +31,9 @@ No Hugging Face Jobs, no cloud costs — everything runs on your machine.
 | YOLOv8-xlarge        | 2–4                    | ~14–16 GB  |
 | RTDETRv2-small       | 8–16                   | ~8–10 GB   |
 | RTDETRv2-large       | 4–6                    | ~13–15 GB  |
+| MD1000-larch (YOLO11-L)  | 8–16               | ~6–8 GB    |
+| MD1000-sorrel (YOLO11-S) | 16–32              | ~3–5 GB    |
+| MDV6-rtdetr-c (.pt)  | 4–8                    | ~10–12 GB  |
 | YOLOS-tiny           | 16–32                  | ~4–6 GB    |
 | YOLOS-base           | 8–12                   | ~9–11 GB   |
 | DETR-resnet50        | 8–12                   | ~8–10 GB   |
@@ -111,39 +114,82 @@ Supported format pairs:
 | `eikelboom-csv` | `yolo` | Two-step: CSV → temp COCO → YOLO |
 | `pascal-voc-csv` | `yolo` | Two-step: CSV → temp COCO → YOLO |
 
-### YOLOv8 (Ultralytics) — simplest path for detection
+### MegaDetector fine-tuning (recommended for wildlife detection)
+
+Fine-tune MegaDetector models using `train_megadetector.py`.
+Weights are auto-downloaded on first use. Dataset must be in YOLO format.
+All MegaDetector models detect 3 classes: **animal, person, vehicle**.
+
+#### Three models verified to fine-tune with ultralytics
+
+| Model | Architecture | Params | License | Input | Speed | Accuracy |
+|-------|-------------|--------|---------|-------|-------|----------|
+| **MD1000-larch** | YOLO11-L | 25M | MIT | 640px | Fast (3.5ms) | Best overall |
+| **MD1000-sorrel** | YOLO11-S | 9M | MIT | 960px | Fastest (1.6ms) | Good, highest precision |
+| **MDV6-rtdetr-c** | RT-DETR-L | 32M | AGPL | 1280px | Slower (8.7ms) | Best recall/mAP, NMS-free |
+
+**2-epoch benchmark on Eikelboom aerial wildlife data (val, conf=0.3):**
+
+| Model | Precision | Recall | F1 | mAP@0.5 |
+|-------|-----------|--------|-----|---------|
+| MD1000-sorrel | **0.714** | 0.566 | **0.632** | 0.555 |
+| MD1000-larch | 0.650 | 0.588 | 0.617 | 0.555 |
+| MDV6-rtdetr-c | 0.411 | **0.795** | 0.542 | **0.696** |
+
+**Recommendation:** Use **MD1000-larch** for general fine-tuning (MIT license, stable training,
+best balance). Use **MDV6-rtdetr-c** only if you need maximum recall or NMS-free inference.
+Use **MD1000-sorrel** for edge/CPU deployment or when precision matters most.
+
+#### Other models in the registry (not all trainable)
+
+| Model | Status | Notes |
+|-------|--------|-------|
+| `MD1000-cedar` | ⚠️ Needs `yolov9pip` | YOLOv9c, not plain ultralytics |
+| `MD1000-redwood` | ❌ YOLOv5 format | Cannot train with ultralytics v8 |
+| `MD1000-spruce` | ❌ YOLOv5 format | Cannot train with ultralytics v8 |
+| `MDV6-yolov9-c/e` | ⚠️ Untested | PytorchWildlife AGPL |
+| `MDV6-yolov10-c/e` | ⚠️ Untested | PytorchWildlife AGPL |
+| `MDv5a/b` | ❌ YOLOv5 format | Cannot train with ultralytics v8 |
 
 ```bash
-# YOLO-format dataset (dataset.yaml already exists)
-python scripts/training/train_yolo.py \
-  --data ./data/yolo_dataset/dataset.yaml \
-  --model yolov8n.pt \
+# Fine-tune MD1000-larch (recommended)
+python scripts/training/train_megadetector.py \
+  --model MD1000-larch \
+  --data ./week1/data/eikelboom_yolo_tiled/dataset.yaml \
+  --epochs 50 --batch 16 --imgsz 640 \
+  --log wandb --wandb_project wildlife-detection
+
+# Fine-tune MD1000-sorrel (small/fast)
+python scripts/training/train_megadetector.py \
+  --model MD1000-sorrel \
+  --data ./week1/data/eikelboom_yolo_tiled/dataset.yaml \
   --epochs 50 --batch 16 --imgsz 640
 
-# COCO-format dataset (auto-converts to YOLO)
-python scripts/training/train_yolo.py \
-  --dataset_dir ./data/my_coco_dataset \
-  --model yolov8s.pt \
-  --epochs 100 --batch 8
+# Fine-tune MDV6 RT-DETR (amp=False set automatically)
+python scripts/training/train_megadetector.py \
+  --model MDV6-rtdetr-c \
+  --data ./week1/data/eikelboom_yolo_tiled/dataset.yaml \
+  --epochs 50 --batch 8 --imgsz 640
 
-# Fine-tune from previous training run
-python scripts/training/train_yolo.py \
-  --data ./data/yolo_dataset/dataset.yaml \
-  --model ./output/yolo/train/weights/best.pt \
-  --epochs 30 --lr0 0.001
+# Evaluate a fine-tuned model
+python scripts/training/train_megadetector.py \
+  --model ./output/md1000_larch_finetune/weights/best.pt \
+  --data ./week1/data/eikelboom_yolo_tiled/dataset.yaml \
+  --eval_only
 
-# With SAHI tiled inference after training
-python scripts/training/train_yolo.py \
-  --data ./data/yolo_dataset/dataset.yaml \
-  --model yolov8n.pt --epochs 50 \
-  --sahi --sahi_slice 640 --sahi_overlap 0.2
-
-# With WandB logging
-python scripts/training/train_yolo.py \
-  --data ./data/yolo_dataset/dataset.yaml \
-  --model yolov8m.pt --epochs 100 \
-  --wandb_project wildlife-detection --wandb_run exp01
+# Compare multiple models (P, R, F1, mAP)
+python scripts/training/evaluate_detectors.py \
+  --model yolo yolo yolo \
+  --weights ./output/sorrel/best.pt ./output/larch/best.pt ./output/rtdetr/best.pt \
+  --dataset_dir ./week1/data/eikelboom_coco_tiled \
+  --split val --conf_thres 0.3
 ```
+
+**RT-DETR gotchas** (handled automatically by `train_megadetector.py`):
+- `amp=False` — AMP causes NaN losses in RT-DETR bipartite matching
+- `deterministic=False` — `F.grid_sample` rejects deterministic mode
+- Lower LR required (`lr0=0.0001` vs `0.001` for YOLO)
+- `freeze` has no effect on RT-DETR (backbone not cleanly separable)
 
 ### Transformers-based detection
 
@@ -194,12 +240,12 @@ python scripts/training/train_segmentation.py \
 
 ### When the user asks to train a model:
 
-1. Determine task type: **yolo** / detection / classification / seg_instance / seg_semantic
-2. For quick detection training, default to **YOLOv8** (Ultralytics) unless the user requests a Transformers model
-3. Run the validator first: `python scripts/training/validate_dataset.py --task <task> --dataset_dir <path>`
-4. Run the appropriate training script
-5. Start a `wandb` or TensorBoard session if requested
-6. Monitor training by tailing logs or reading WandB output
+1. Determine task type: **megadetector** / detection / classification / seg_instance / seg_semantic
+2. For wildlife detection, default to **MegaDetector fine-tuning** via `train_megadetector.py` (MD1000-larch recommended)
+3. For generic detection, use YOLOv8 or Transformers models
+4. Ensure dataset is in correct format (YOLO .txt for MegaDetector/YOLO, COCO JSON for Transformers)
+5. Run the appropriate training script with `--log wandb` if requested
+6. After training, compare models with `evaluate_detectors.py`
 
 ---
 
@@ -391,15 +437,24 @@ python scripts/training/validate_dataset.py --task seg_semantic --dataset_dir ./
 
 ## SAHI — tiled inference for large images
 
-After YOLO training, use `--sahi` to run SAHI (Slicing Aided Hyper Inference) on the
-validation set. Essential for drone/satellite imagery where objects are small relative
-to the image.
+After training, use SAHI (Slicing Aided Hyper Inference) for inference on large images.
+Essential for drone/satellite imagery where objects are small relative to the image.
+See the `sahi-inference` skill for full details.
 
-```bash
-python scripts/training/train_yolo.py \
-  --data ./data/yolo_dataset/dataset.yaml \
-  --model yolov8n.pt --epochs 50 \
-  --sahi --sahi_slice 640 --sahi_overlap 0.2 --sahi_conf 0.2
+```python
+from sahi import AutoDetectionModel
+from sahi.predict import get_sliced_prediction
+
+model = AutoDetectionModel.from_pretrained(
+    model_type="yolov8",
+    model_path="./output/md1000_larch_finetune/weights/best.pt",
+    confidence_threshold=0.2,
+    device="cuda:0",
+)
+result = get_sliced_prediction(
+    "large_image.jpg", model,
+    slice_height=640, slice_width=640, overlap_height_ratio=0.2, overlap_width_ratio=0.2,
+)
 ```
 
 | Parameter | Default | Description |
@@ -419,20 +474,26 @@ Requires: `pip install sahi`
 ### WandB
 ```bash
 pip install wandb
-wandb login   # paste API key once
+wandb login   # paste API key once — stored in ~/.netrc
+
+# Enable wandb in ultralytics settings (one-time, persisted)
+python -c "from ultralytics import settings; settings.update(wandb=True)"
 ```
 
-For YOLO: `--wandb_project my-project --wandb_run my-run`
+For MegaDetector: `--log wandb --wandb_project my-project --wandb_run my-run`
 For Transformers: `--log wandb --wandb_project my-project --wandb_run my-run`
+
+MegaDetector training logs P, R, mAP, loss curves (built-in ultralytics) + F1 (custom callback).
 
 ### TensorBoard
 ```bash
 pip install tensorboard
 tensorboard --logdir ./output/detection/runs &
 ```
+For MegaDetector: `--log tensorboard`
 For Transformers: `--log tensorboard`
 
-Both can be enabled simultaneously for Transformers trainers: `--log wandb tensorboard`.
+Both can be enabled simultaneously: `--log wandb tensorboard`.
 
 ---
 
@@ -481,6 +542,10 @@ Both can be enabled simultaneously for Transformers trainers: `--log wandb tenso
 | Mask size mismatch error | Set `--image_size` consistently and re-run validator |
 | YOLO "no labels found" | Ensure labels/ mirrors images/ directory structure |
 | SAHI import error | Run `pip install sahi` |
+| RT-DETR NaN loss | Set `amp=False` (done automatically by `train_megadetector.py`) |
+| RT-DETR mAP drops while loss drops | Overfitting — add `patience=10`, reduce epochs |
+| MD1000-spruce/redwood won't train | YOLOv5 format — incompatible with ultralytics v8 training |
+| WandB not logging | Run `python -c "from ultralytics import settings; settings.update(wandb=True)"` |
 
 ---
 
@@ -497,66 +562,18 @@ Both can be enabled simultaneously for Transformers trainers: `--log wandb tenso
 
 ---
 
-## MDV6 RT-DETR fine-tuning (PytorchWildlife)
-
-Fine-tune MegaDetector V6 (Apache RT-DETR) on custom COCO-format datasets.
-Uses the raw lyuwenyu RT-DETR model loaded via PytorchWildlife's YAMLConfig (before `.deploy()`).
-
-**Requires `fit-mdv6` conda environment** with PytorchWildlife + albumentations + torchmetrics.
-
-| Model variant         | Backbone   | Params | Recommended batch | VRAM usage |
-|-----------------------|------------|--------|-------------------|------------|
-| `MDV6-apa-rtdetr-e`   | ResNet-101 | 76.4M  | 4–8               | ~12–14 GB  |
-| `MDV6-apa-rtdetr-c`   | ResNet-18  | 20.2M  | 8–16              | ~6–8 GB    |
-
-```bash
-# Fine-tune MDV6-e on COCO-format dataset
-/home/christian/anaconda3/envs/fit-mdv6/bin/python scripts/training/train_mdv6_rtdetr.py \
-  --model_version MDV6-apa-rtdetr-e \
-  --dataset_dir ./week1/data/eikelboom_coco_tiled \
-  --output_dir ./output/mdv6_finetune \
-  --epochs 50 --batch_size 8 --lr 1e-4 --lr_backbone 0.1 \
-  --freeze_backbone 5
-
-# Quick 2-epoch smoke test
-/home/christian/anaconda3/envs/fit-mdv6/bin/python scripts/training/train_mdv6_rtdetr.py \
-  --model_version MDV6-apa-rtdetr-e \
-  --dataset_dir ./week1/data/eikelboom_coco_tiled \
-  --output_dir ./output/mdv6_finetune_test \
-  --epochs 2 --batch_size 4
-
-# Eval only (with EMA weights)
-/home/christian/anaconda3/envs/fit-mdv6/bin/python scripts/training/train_mdv6_rtdetr.py \
-  --model_version MDV6-apa-rtdetr-e \
-  --dataset_dir ./week1/data/eikelboom_coco_tiled \
-  --output_dir ./output/mdv6_finetune \
-  --eval_only --resume ./output/mdv6_finetune/best_epoch*.pth
-```
-
-Key features:
-- Discriminative LR: backbone trained at `lr × lr_backbone` (default 0.1×)
-- EMA weight averaging (decay=0.9999, on by default)
-- Backbone freezing for first N epochs
-- bf16 mixed precision on CUDA
-- Saves checkpoints in lyuwenyu format (`{'ema': {'module': ...}, 'model': ...}`)
-- Supports denoising training (contrastive denoising queries)
-
----
-
 ## File index
 
 ```
 scripts/training/
   convert_dataset.py         ← format converter (VOC CSV / COCO / YOLO)
   validate_dataset.py        ← pre-flight checker for all five task types
+  train_megadetector.py      ← fine-tune any MegaDetector (MD1000 + MDV6, ultralytics)
   train_detection.py         ← object detection (RTDETRv2, YOLOS, DETR — Transformers)
-  train_mdv6_rtdetr.py       ← MDV6 RT-DETR fine-tuning (PytorchWildlife, custom loop)
   train_classification.py    ← image classification (ViT, DINOv2, MobileViT, ResNet)
   train_segmentation.py      ← instance seg (Mask2Former) + semantic seg (SegFormer)
-  evaluate_detectors.py      ← compare models: P, R, F1, mAP (MDV6 + YOLO)
-
-src/wildlife_detection/training/
-  rtdetr_criterion.py        ← RT-DETR loss: HungarianMatcher + RTDETRCriterionv2
+  evaluate_detectors.py      ← compare models: P, R, F1, mAP (any ultralytics .pt)
+  calibrate_confidence.py    ← find optimal confidence threshold for animal counting
 ```
 
 Install dependencies:
@@ -564,14 +581,11 @@ Install dependencies:
 # Core (all trainers)
 pip install torch torchvision pillow tqdm
 
-# YOLOv8
+# Ultralytics (MegaDetector + YOLOv8)
 pip install ultralytics
 
 # SAHI (optional, for tiled inference)
 pip install sahi
-
-# MDV6 RT-DETR (requires fit-mdv6 conda env)
-pip install PytorchWildlife albumentations torchmetrics
 
 # Transformers trainers
 pip install transformers datasets timm torchmetrics pycocotools \
@@ -579,4 +593,14 @@ pip install transformers datasets timm torchmetrics pycocotools \
 
 # Logging (optional)
 pip install wandb tensorboard
+```
+
+
+### Experiment Tracking:
+Log to wandb, enable it if necessary.
+
+```
+from ultralytics import settings
+settings.update(wandb=True)
+
 ```

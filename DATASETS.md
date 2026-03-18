@@ -9,4 +9,4 @@ format descriptions, and practical-to-dataset mappings.
 | **Week 2** | Radar Remote Sensing & Galamsey Detection | `week2/data/DATASETS.md` (TODO — N. Voss & A. Bosu) |
 
 All Week 1 datasets are downloaded automatically by
-[`week1/data/download_data.py`](./week1/data/download_data.py).
+[`week1/data/download_data.py`](scripts/data/download_data.py).

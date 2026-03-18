@@ -1,96 +1,319 @@
-# Fine-tuning MegaDetectorV6 RT-DETR with plain ultralytics
+# MegaDetector Fine-Tuning with Ultralytics
+## MDv6 RT-DETR (PytorchWildlife) + MDv1000 (Dan Morris)
 
-**The AGPL-licensed `MDV6-rtdetr-c.pt` can be loaded and fine-tuned with `from ultralytics import RTDETR`, but the Apache-licensed `.pth` weights cannot.** The critical distinction is that PytorchWildlife ships two entirely separate RT-DETR implementations under different licenses — one built on ultralytics (AGPL, `.pt` format), the other on a non-ultralytics codebase (Apache 2.0, `.pth` format). This split exists specifically to let commercial users avoid AGPL contamination. The officially recommended fine-tuning path is PytorchWildlife's own `PW_FT_detection` module, which wraps ultralytics internally. Fine-tuning RT-DETR through ultralytics is officially supported but carries several well-documented pitfalls that can derail training.
+---
 
-## Three RT-DETR weight files, two incompatible codebases
+## TL;DR Decision Table
 
-PytorchWildlife hosts all MDv6 weights on a single Zenodo record (DOI: 10.5281/zenodo.15398270, version v22, published May 13, 2025). The RT-DETR–specific files are:
+| Model | Ultralytics compatible? | Fine-tune how? | License |
+|-------|------------------------|----------------|---------|
+| MDV6-rtdetr-c.pt | ✅ Yes | `RTDETR("MDV6-rtdetr-c.pt").train()` | AGPL |
+| MDV6-apa-rtdetr-c.pth | ❌ No | lyuwenyu/RT-DETR scripts only | Apache 2.0 |
+| MDV6-apa-rtdetr-e.pth | ❌ No | lyuwenyu/RT-DETR scripts only | Apache 2.0 |
+| MDv1000-larch (YOLOv11L) | ✅ Yes | `YOLO("md_v1000.0.0-larch.pt").train()` | MIT |
+| MDv1000-sorrel (YOLOv11s) | ✅ Yes | `YOLO("md_v1000.0.0-sorrel.pt").train()` | MIT |
+| MDv1000-cedar (YOLOv9c) | ⚠️ Partial | needs `yolov9pip`, not plain ultralytics | MIT |
+| MDv1000-redwood | ❌ No | torch.hub (YOLOv5 repo) only | AGPL |
+| MDv1000-spruce (YOLOv5s) | ❌ No | torch.hub (YOLOv5 repo) only | AGPL |
 
-| File | Size | Format | License | Loaded via |
-|------|------|--------|---------|------------|
-| `MDV6-rtdetr-c.pt` | **66.1 MB** | Ultralytics `.pt` | AGPL-3.0 | `MegaDetectorV6(version='MDV6-rtdetr-c')` |
-| `MDV6-apa-rtdetr-c.pth` | **322.4 MB** | PyTorch `.pth` | Apache 2.0 | `MegaDetectorV6Apache(version='MDV6-apa-rtdetr-c')` |
-| `MDV6-apa-rtdetr-e.pth` | **1.2 GB** | PyTorch `.pth` | Apache 2.0 | `MegaDetectorV6Apache(version='MDV6-apa-rtdetr-e')` |
+**Bottom line:** For a clean ultralytics-only environment, your fine-tuning options are
+`MDV6-rtdetr-c.pt` (RTDETR class), `larch`, and `sorrel` (both YOLO class).
 
-Direct download URLs follow the pattern `https://zenodo.org/records/15398270/files/<filename>?download=1`. There is **no** AGPL `MDV6-rtdetr-e.pt` — the extra-large RT-DETR exists only under the Apache license. All models detect three classes: animal, person, and vehicle at **1280×1280** input resolution.
+---
 
-The **~5× size gap** between `MDV6-rtdetr-c.pt` (66 MB) and `MDV6-apa-rtdetr-c.pth` (322 MB) is the clearest evidence these are different codebases. The ultralytics `.pt` format bundles architecture YAML, training arguments, and a compressed state dict into one file, while the `.pth` is a standard PyTorch state dict — likely from the original lyuwenyu/RT-DETR implementation (the CVPR 2024 paper's official Apache-licensed codebase). The different layer naming conventions and serialization approaches make these two weight formats mutually incompatible.
+## Environment
 
-## The AGPL weights were trained with ultralytics; the Apache weights were not
+One environment works for everything in this guide:
 
-Multiple pieces of evidence confirm the training lineage of each variant:
+```bash
+conda create -n md-finetune python=3.10 -y
+conda activate md-finetune
 
-**Evidence that `MDV6-rtdetr-c.pt` was trained using ultralytics:**
-- The file uses ultralytics' proprietary `.pt` serialization format, which embeds the model YAML config and training hyperparameters alongside weights.
-- In the CameraTraps source code, the `MegaDetectorV6` class inherits from `YOLOV8Base`, located in `PytorchWildlife/models/detection/ultralytics_based/megadetectorv6.py`, confirming it plugs directly into the ultralytics inference pipeline.
-- The v1.2.0 release notes state explicitly: **"Currently the fine-tuning is based on Ultralytics with AGPL. We will release MIT versions in the future."**
-- The earliest MDv6 release (v1.1.0, November 2024) used the naming convention "MDv6-ultralytics-yolov9-compact."
+# PyTorch with CUDA 12.4 — must be pip, not conda
+pip install torch==2.6.0 torchvision==0.21.0 \
+    --index-url https://download.pytorch.org/whl/cu124
 
-**Evidence that `MDV6-apa-rtdetr-*.pth` uses a different implementation:**
-- Apache 2.0 licensing specifically requires avoiding ultralytics' AGPL-licensed code — the entire point of the separate Apache variant is AGPL avoidance.
-- A separate `MegaDetectorV6Apache` class (imported from the standalone `pw_detection` module, not from `PytorchWildlife.models`) handles loading. The source code for this class is not fully documented in the public API reference, suggesting it was added more recently and may wrap the lyuwenyu/RT-DETR PyTorch implementation.
-- Standard PyTorch `.pth` format rather than ultralytics `.pt`.
+# Ultralytics — handles RTDETR, YOLOv9, YOLOv11
+pip install "ultralytics>=8.3.150"  # must be AFTER the #20627 KeyError fix
 
-## Loading `MDV6-rtdetr-c.pt` with plain ultralytics works — with version caveats
+# Verify
+python -c "import torch; print(torch.cuda.get_device_name(0))"
+```
 
-Because `MDV6-rtdetr-c.pt` is a native ultralytics checkpoint, this code is expected to succeed:
+> ⚠️ **Pin ultralytics to ≥8.3.150.** Version 8.3.133 introduced a `KeyError` that
+> breaks RT-DETR fine-tuning (`model.0.conv.weight` not found). This is now fixed
+> but you must be past the regression.
+
+---
+
+## Dataset Format (same for all models)
+
+All three ultralytics-compatible models use standard YOLO txt format:
+
+```
+dataset/
+  images/
+    train/   *.jpg
+    val/     *.jpg
+  labels/
+    train/   *.txt   # one file per image
+    val/     *.txt
+  data.yaml
+```
+
+Each `.txt` label file, one row per detection:
+```
+# class  x_center  y_center  width  height  (all normalized 0–1)
+0  0.512  0.341  0.089  0.124
+```
+
+MegaDetector class mapping (0-indexed, same across all versions):
+```
+0 = animal    1 = person    2 = vehicle
+```
+
+`data.yaml`:
+```yaml
+path: /absolute/path/to/dataset
+train: images/train
+val:   images/val
+nc: 3
+names: ["animal", "person", "vehicle"]
+```
+
+---
+
+## Part 1 — Fine-tuning MDV6 RT-DETR
+
+### Weight file
+
+```bash
+wget "https://zenodo.org/records/15398270/files/MDV6-rtdetr-c.pt?download=1" \
+     -O MDV6-rtdetr-c.pt
+```
+
+66 MB. AGPL-licensed. Trained by Microsoft/PytorchWildlife team using ultralytics.
+Input resolution: 1280×1280.
+
+### Why the AGPL `.pt` works but the Apache `.pth` does not
+
+PytorchWildlife ships two RT-DETR lineages:
+
+- `MDV6-rtdetr-c.pt` — trained with ultralytics, serialized in ultralytics `.pt`
+  format (bundles architecture YAML + weights). Loads natively with `RTDETR()`.
+- `MDV6-apa-rtdetr-*.pth` — trained with the lyuwenyu/RT-DETR codebase
+  (CVPR 2024 paper's Apache-licensed implementation). Plain PyTorch state dict.
+  Incompatible with ultralytics entirely.
+
+The 5× size difference (66 MB vs 322 MB) alone confirms they are different
+codebases, not just different formats.
+
+### Fine-tuning code
 
 ```python
 from ultralytics import RTDETR
+
 model = RTDETR("MDV6-rtdetr-c.pt")
-model.info()  # Should show 3-class RT-DETR architecture
+
+model.train(
+    data="data.yaml",
+    epochs=50,
+    imgsz=1280,     # RT-DETR MDv6 runs at 1280 — don't downsize
+    batch=4,        # transformer encoder is VRAM-hungry; 4–8 on RTX 4080 at 1280px
+    device=0,
+    lr0=0.0001,     # RT-DETR requires much lower LR than YOLO
+    weight_decay=0.0001,
+    amp=False,      # CRITICAL — AMP causes NaN losses in RT-DETR bipartite matching
+    project="runs/finetune",
+    name="mdv6-rtdetr-custom"
+)
 ```
 
-PytorchWildlife itself does exactly this under the hood — `YOLOV8Base` wraps `ultralytics.YOLO()`, and ultralytics auto-detects RT-DETR architecture from the embedded config in the `.pt` file. You could also use `YOLO("MDV6-rtdetr-c.pt")` and ultralytics will route to the correct internal model class, though using the explicit `RTDETR()` constructor is cleaner.
+### RT-DETR specific gotchas
 
-**No public GitHub issues or forum posts were found** where someone specifically reported loading `MDV6-rtdetr-c.pt` with plain ultralytics. This is a gap in community documentation — the PytorchWildlife ecosystem encourages users to work through its own API rather than dropping to raw ultralytics.
+**`amp=False` is mandatory.** The ultralytics source code itself warns that AMP
+"can lead to NaN outputs and may produce errors during bipartite graph matching."
+This is not a maybe — on most datasets it will silently corrupt your training run.
+The VRAM cost is real: at 1280px, batch=4 without AMP will use ~14 GB on an RTX 4080.
 
-However, a **critical regression bug** (ultralytics issue #20627) broke RT-DETR fine-tuning in **ultralytics v8.3.133** (May 2025). The `load()` method in `nn/tasks.py` assumed all models have a YOLO-style first convolution key (`model.0.conv.weight`), which RT-DETR's ResNet backbone does not. This caused a `KeyError` when `model.train()` attempted to load weights. The issue is labeled "fixed" in subsequent versions. **Anyone attempting this workflow must use an ultralytics version after this fix.**
+**Learning rate is critical.** `lr0=0.0001` is the community standard. Using
+`lr0=0.001` (fine for YOLO) will destabilize the attention layers within a few
+epochs. If you see loss spiking or NaN after epoch 10–20, halve the LR.
 
-The Apache `.pth` weights **cannot** be loaded with `RTDETR()` from ultralytics — the layer names, architecture, and format are entirely different. Attempting `RTDETR("MDV6-apa-rtdetr-c.pth")` will fail.
+**`freeze` parameter has no effect.** RT-DETR's backbone/encoder/decoder are not
+cleanly separable the way YOLO layers are. Use `weight_decay` + early stopping
+to control overfitting on small datasets instead.
 
-## Fine-tuning RT-DETR in ultralytics is supported but fragile
+**`model.tune()` does not work** for RT-DETR — it internally calls the YOLO
+trainer. Do not use it.
 
-Ultralytics officially supports Train, Val, Predict, and Export modes for RT-DETR. The standard fine-tuning workflow would be:
+**`deterministic=False`** — PyTorch's `F.grid_sample` rejects deterministic mode.
+If you've globally set `torch.use_deterministic_algorithms(True)`, disable it.
+
+**mAP may decrease while training loss decreases.** Watch validation metrics
+directly and use `patience=10` to stop early. RT-DETR overfits faster than YOLO.
+
+### Evaluate and export
 
 ```python
-from ultralytics import RTDETR
-model = RTDETR("MDV6-rtdetr-c.pt")
-results = model.train(data="my_dataset.yaml", epochs=100, imgsz=1280, amp=False)
+# Load best checkpoint
+model = RTDETR("runs/finetune/mdv6-rtdetr-custom/weights/best.pt")
+
+# Validate
+metrics = model.val(data="data.yaml")
+print(f"mAP@50:     {metrics.box.map50:.3f}")
+print(f"mAP@50:95:  {metrics.box.map:.3f}")
+
+# Export to ONNX for deployment
+model.export(format="onnx", imgsz=1280)
 ```
 
-However, the community has documented **six significant gotchas** that apply to any RT-DETR fine-tuning in ultralytics, all of which would affect MDv6 weights:
+---
 
-- **AMP causes NaN outputs.** The ultralytics source code itself warns that automatic mixed precision "can lead to NaN outputs and may produce errors during bipartite graph matching." Setting `amp=False` is strongly recommended, at the cost of higher VRAM usage.
-- **NaN loss after ~50 epochs with AdamW** (issue #7594). RT-DETR's transformer decoder is sensitive to learning rate — start lower than YOLO defaults.
-- **mAP decreasing while training loss decreases** (issue #20745). Validation metrics diverge from training metrics, suggesting RT-DETR overfits faster than YOLO models and requires careful early stopping.
-- **`model.tune()` does not work** (issue #14388). The hyperparameter tuning method internally invokes `yolo train`, not the RT-DETR trainer.
-- **The `model.0.conv.weight` KeyError** (issue #20627, now fixed). Pin your ultralytics version to one after this fix.
-- **`F.grid_sample` rejects `deterministic=True`** — set `deterministic=False` when training.
+## Part 2 — Fine-tuning MDv1000 (Dan Morris) via Ultralytics
 
-Training RT-DETR from scratch (without pretrained backbone weights) yields near-zero accuracy (issues #19530, #6924), so starting from pretrained weights like MDv6 is effectively mandatory for acceptable results. The ultralytics `RTDETRTrainer` handles head adaptation when fine-tuning to a different number of classes.
+Only `larch` (YOLOv11L) and `sorrel` (YOLOv11s) are natively ultralytics-compatible.
+Both are MIT-licensed. `cedar` requires `yolov9pip`. `redwood` and `spruce` require
+the old `ultralytics/yolov5` torch.hub path and cannot be fine-tuned via ultralytics.
 
-## The Apache and MIT variants serve commercial licensing needs
+### Weight files
 
-The three-tier licensing structure of MDv6 exists to address a persistent community pain point: ultralytics' AGPL license makes its outputs unusable in proprietary commercial products without an enterprise license.
+```bash
+# Recommended default for fine-tuning (best accuracy, MIT license)
+wget https://github.com/agentmorris/MegaDetector/releases/download/v1000.0/md_v1000.0.0-larch.pt
 
-The **MIT-licensed models** (`MDV6-mit-yolov9-c.ckpt`, `MDV6-mit-yolov9-e.ckpt`) use a custom YOLO implementation in `.ckpt` format, loaded via `MegaDetectorV6MIT`. The **Apache-licensed models** (`MDV6-apa-rtdetr-c.pth`, `MDV6-apa-rtdetr-e.pth`) use what is almost certainly the lyuwenyu/RT-DETR PyTorch codebase, loaded via `MegaDetectorV6Apache`. Both are imported from `pw_detection`, a separate module from the main `PytorchWildlife` package, with its own loading infrastructure that does not touch ultralytics code. These classes became available in PytorchWildlife **v1.2.4** (latest release is v1.2.4.2 on PyPI).
+# Lightweight option (~30 MB, good for CPU/edge)
+wget https://github.com/agentmorris/MegaDetector/releases/download/v1000.0/md_v1000.0.0-sorrel.pt
+```
 
-Fine-tuning the Apache `.pth` weights would require using the lyuwenyu/RT-DETR training scripts (or equivalent), not ultralytics. **No official fine-tuning pathway for the Apache weights has been documented** by the PytorchWildlife team — the `PW_FT_detection` module currently only wraps ultralytics.
+| Model | Architecture | Input | Size | naAP vs MDv5a |
+|-------|-------------|-------|------|---------------|
+| larch | YOLOv11L | 640px | ~120 MB | 0.97 |
+| sorrel | YOLOv11s | 960px | ~30 MB | 0.97 |
 
-## The official fine-tuning path goes through PW_FT_detection
+### Fine-tuning code
 
-PytorchWildlife's recommended approach is its own **`PW_FT_detection/`** module, released in v1.2.0 (January 2025). This module:
+```python
+from ultralytics import YOLO
 
-- Wraps ultralytics' training pipeline under the hood (and therefore carries AGPL licensing).
-- Supports fine-tuning from **any** released MDv6 pretrained checkpoint, including `MDV6-rtdetr-c`.
-- Includes dataset preparation utilities for converting custom annotations into the required format.
-- Produces fine-tuned weights that can be reloaded into the PytorchWildlife inference pipeline via the `custom_weight_loading.ipynb` demo notebook and the Gradio web app.
+# Use larch for best accuracy, sorrel for smaller footprint
+model = YOLO("md_v1000.0.0-larch.pt")
 
-The workflow documented in the repo is: (1) prepare data using PW_FT_detection's built-in utilities, (2) fine-tune from a pretrained MDv6 checkpoint, (3) load the resulting custom weights back into PytorchWildlife via `MegaDetectorV6(weights="path/to/custom.pt")`. The release notes from v1.1.0 confirm: "You can now load custom weights you fine-tuned on your own datasets using the finetuning module directly in the Pytorch-Wildlife pipeline."
+model.train(
+    data="data.yaml",
+    epochs=50,
+    imgsz=640,       # larch is a 640px model
+    batch=16,
+    device=0,
+    lr0=0.001,
+    freeze=10,       # freeze first 10 backbone layers — works cleanly with YOLO
+    half=True,       # FP16 safe for YOLO on RTX 4080
+    project="runs/finetune",
+    name="mdv1000-larch-custom"
+)
+```
 
-The team has stated MIT-licensed fine-tuning modules are planned but **not yet released**. No separate fine-tuning tutorial exists specifically for RT-DETR — the detection fine-tuning module handles all MDv6 architectures uniformly through ultralytics.
+For sorrel at its native 960px:
 
-## Conclusion
+```python
+model = YOLO("md_v1000.0.0-sorrel.pt")
+model.train(
+    data="data.yaml",
+    epochs=50,
+    imgsz=960,
+    batch=8,         # larger input = smaller batch
+    device=0,
+    lr0=0.001,
+    freeze=10,
+    half=True,
+    project="runs/finetune",
+    name="mdv1000-sorrel-custom"
+)
+```
 
-For the specific question of whether `from ultralytics import RTDETR` can load and fine-tune `MDV6-rtdetr-c.pt`: **yes, it can**, because these weights are native ultralytics checkpoints. The `.train()` method is officially supported for RT-DETR. The practical barriers are not format compatibility but rather training stability — AMP-induced NaN losses, learning rate sensitivity, and a now-fixed `KeyError` regression in ultralytics v8.3.133. The Apache `.pth` weights are a completely separate model family that cannot be loaded by ultralytics at all. For production use, the safest path remains PytorchWildlife's `PW_FT_detection` module, which handles ultralytics' RT-DETR quirks and provides an integrated pipeline from data preparation through inference deployment.
+### YOLOv11 fine-tuning notes
+
+YOLOv11 is well-behaved with ultralytics — none of the RT-DETR stability issues apply.
+
+**`freeze=10`** is the right lever for small datasets. It keeps the backbone frozen
+and only trains the detection head, preventing the pretrained wildlife features from
+being overwritten by a small domain dataset.
+
+**`half=True`** (FP16) is safe and gives ~2× speedup on RTX 4080. Unlike RT-DETR,
+YOLO bipartite matching is not used so AMP does not cause NaN issues.
+
+**Dan Morris's own advice** on the MDv1000 models: use the largest model your time
+budget allows. On a GPU like the RTX 4080, larch processes well over 1M images/day,
+so there is no practical reason to use sorrel unless you need edge deployment.
+
+### Evaluate and run inference
+
+```python
+# Load fine-tuned weights
+model = YOLO("runs/finetune/mdv1000-larch-custom/weights/best.pt")
+
+# Validate
+metrics = model.val(data="data.yaml")
+print(f"mAP@50:     {metrics.box.map50:.3f}")
+print(f"mAP@50:95:  {metrics.box.map:.3f}")
+
+# Inference
+CLASS_NAMES = {0: "animal", 1: "person", 2: "vehicle"}
+results = model.predict("image.jpg", conf=0.2, imgsz=640, verbose=False)
+for result in results:
+    for box in result.boxes:
+        cls  = int(box.cls.item())
+        conf = box.conf.item()
+        x1, y1, x2, y2 = box.xyxy[0].tolist()
+        print(f"{CLASS_NAMES[cls]}: {conf:.3f}  [{x1:.0f},{y1:.0f},{x2:.0f},{y2:.0f}]")
+```
+
+---
+
+## Part 3 — Choosing Between Them
+
+| Consideration | MDV6-rtdetr-c | MDv1000-larch | MDv1000-sorrel |
+|--------------|---------------|----------------|----------------|
+| License | AGPL | MIT | MIT |
+| Loader | `RTDETR()` | `YOLO()` | `YOLO()` |
+| Input size | 1280px | 640px | 960px |
+| Fine-tune difficulty | High (AMP, LR) | Low | Low |
+| VRAM at fine-tune | ~14 GB (batch 4) | ~8 GB (batch 16) | ~10 GB (batch 8) |
+| NMS required | No (end-to-end) | Yes | Yes |
+| Speed (RTX 4080) | ~5× faster than MDv5 | very fast | fastest |
+| Best for | Max recall, no NMS | General fine-tuning | Edge / CPU |
+
+For the course practical, **larch is the correct choice** — MIT license, clean YOLO
+API, no stability surprises, and naAP 0.97 is indistinguishable from redwood for
+most ecological datasets. RT-DETR is interesting academically but too fragile for
+a classroom setting.
+
+For your own production work (iguana detection, wildlife surveys), RT-DETR's
+NMS-free inference is genuinely useful when animals are densely packed and NMS
+threshold tuning becomes painful. Start with larch, switch to RT-DETR if you're
+spending time debugging NMS suppression of adjacent animals.
+
+---
+
+## Common Failure Modes
+
+| Symptom | Model | Likely cause | Fix |
+|---------|-------|-------------|-----|
+| NaN loss after epoch 10 | RT-DETR | AMP enabled | Set `amp=False` |
+| mAP=0 throughout training | RT-DETR | LR too high | Set `lr0=0.0001` |
+| `KeyError: model.0.conv.weight` | RT-DETR | ultralytics <8.3.150 | Upgrade ultralytics |
+| No GPU detected | Both | PyTorch installed via conda | Reinstall PyTorch via pip |
+| Loss converges but val mAP drops | RT-DETR | Overfitting | Add `patience=10`, reduce epochs |
+| `YOLO("md_v5a.0.0.pt")` fails | MDv5/redwood | Wrong format | Use `torch.hub.load` instead |
+
+---
+
+## TODO for Claude Code
+
+- [ ] Download larch and MDV6-rtdetr-c weights to `weights/`
+- [ ] Create a small test dataset from LILA BC Snapshot Serengeti (100 images)
+  to verify fine-tuning pipelines run end-to-end before scaling
+- [ ] Write a unified `finetune.py` script with `--model {larch,sorrel,rtdetr}`
+  argument that picks the correct loader and training params
+- [ ] Benchmark mAP before/after fine-tuning on a domain-specific holdout set
+- [ ] Test RT-DETR export to ONNX for deployment comparison
