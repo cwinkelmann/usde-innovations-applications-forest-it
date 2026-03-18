@@ -171,12 +171,36 @@ def download_serengeti(
         sampled = meta["images"][:n_images]  # fallback
     print(f"  Sampled {len(sampled)} images ({len(images_with_animals)} with animals available)")
 
-    meta_path = output_dir / "camera_trap" / "serengeti_meta.json"
     sampled_ids = {img["id"] for img in sampled}
+    sampled_annotations = [a for a in meta["annotations"] if a["image_id"] in sampled_ids]
+
+    # ── Download bounding box annotations (separate file on LILA) ─────────
+    BBOX_URL = (
+        "https://lila.science/public"
+        "/snapshot-serengeti-bounding-boxes-20190903.json.zip"
+    )
+    print("  Downloading bounding box annotations...")
+    try:
+        r_bbox = requests.get(BBOX_URL, timeout=120)
+        r_bbox.raise_for_status()
+        with zipfile.ZipFile(io.BytesIO(r_bbox.content)) as z:
+            with z.open(z.namelist()[0]) as f:
+                bbox_meta = json.load(f)
+        # Merge bbox annotations for our sampled images
+        bbox_anns = [a for a in bbox_meta.get("annotations", [])
+                     if a["image_id"] in sampled_ids and "bbox" in a]
+        # Add bboxes to the sampled annotations list
+        sampled_annotations.extend(bbox_anns)
+        n_with_bbox = len({a["image_id"] for a in bbox_anns})
+        print(f"  {len(bbox_anns)} bounding boxes for {n_with_bbox}/{len(sampled)} images")
+    except Exception as e:
+        print(f"  WARNING: bbox download failed ({e}), continuing with species labels only")
+
+    meta_path = output_dir / "camera_trap" / "serengeti_meta.json"
     with open(meta_path, "w") as f:
         json.dump({
             "images": sampled,
-            "annotations": [a for a in meta["annotations"] if a["image_id"] in sampled_ids],
+            "annotations": sampled_annotations,
             "categories": meta["categories"],
         }, f)
 
@@ -435,68 +459,100 @@ def download_all(
 # ---------------------------------------------------------------------------
 # Exploration helpers
 # ---------------------------------------------------------------------------
+#
+# All plotting functions create figures but do NOT call plt.show().
+# This makes them work in both Marimo notebooks and standalone scripts.
+# In Marimo, the figure is captured automatically by the cell.
+# In scripts/REPL, call plt.show() yourself after calling these functions.
 
 DATASETS = ("general_dataset", "serengeti", "caltech", "eikelboom")
 
 
 def _list_images(directory: Path) -> list[Path]:
     """Return sorted image paths in *directory*."""
+    if not directory.exists():
+        return []
     return sorted(
         p for p in directory.iterdir()
         if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS
     )
 
 
+def _load_serengeti_meta(output_dir: Path) -> Optional[dict]:
+    """Load Serengeti COCO JSON metadata, return None if missing."""
+    meta_path = output_dir / "camera_trap" / "serengeti_meta.json"
+    if not meta_path.exists():
+        return None
+    with open(meta_path) as f:
+        return json.load(f)
+
+
+def _load_caltech_labels(output_dir: Path):
+    """Load Caltech labels CSV, return None if missing."""
+    import pandas as pd
+    csv_path = output_dir / "camera_trap_labels.csv"
+    if not csv_path.exists():
+        return None
+    return pd.read_csv(csv_path)
+
+
+def _load_herdnet_csv(output_dir: Path):
+    """Load HerdNet General Dataset CSV, return (df, tile_dir) or (None, None)."""
+    import pandas as pd
+    csv = output_dir / "general_dataset" / "test_sample.csv"
+    img_dir = output_dir / "general_dataset" / "test_sample"
+    if not csv.exists():
+        return None, img_dir
+    return pd.read_csv(csv), img_dir
+
+
+def _parse_yolo_labels(label_dir: Path) -> dict[str, int]:
+    """Parse YOLO .txt label files, return {class_id: count}."""
+    counts: dict[str, int] = {}
+    if not label_dir.exists():
+        return counts
+    for lf in sorted(label_dir.glob("*.txt")):
+        for line in lf.read_text().strip().splitlines():
+            parts = line.strip().split()
+            if len(parts) >= 5:
+                counts[parts[0]] = counts.get(parts[0], 0) + 1
+    return counts
+
+
 def summarize(output_dir: Path = _DEFAULT_DIR) -> dict[str, int]:
-    """Print an overview of downloaded datasets and return image counts.
+    """Print overview of downloaded datasets and return image counts."""
+    import pandas as pd
 
-    Example::
-
-        from week1.data.download_data import summarize
-        counts = summarize()
-    """
     counts: dict[str, int] = {}
     print("Week 1 data summary")
     print("=" * 50)
 
-    # General dataset
     gd = output_dir / "general_dataset" / "test_sample"
     if gd.exists():
         n = len(_list_images(gd))
         csv = output_dir / "general_dataset" / "test_sample.csv"
-        n_ann = 0
-        if csv.exists():
-            import pandas as pd
-            n_ann = len(pd.read_csv(csv))
+        n_ann = len(pd.read_csv(csv)) if csv.exists() else 0
         counts["general_dataset"] = n
         print(f"  general_dataset  : {n} tiles, {n_ann} point annotations")
     else:
-        print(f"  general_dataset  : not downloaded")
+        print("  general_dataset  : not downloaded")
 
-    # Serengeti
     sd = output_dir / "camera_trap" / "serengeti_subset"
     if sd.exists():
-        n = len(_list_images(sd))
-        counts["serengeti"] = n
-        print(f"  serengeti        : {n} images")
+        counts["serengeti"] = len(_list_images(sd))
+        print(f"  serengeti        : {counts['serengeti']} images")
     else:
-        print(f"  serengeti        : not downloaded")
+        print("  serengeti        : not downloaded")
 
-    # Caltech
     cd = output_dir / "camera_trap" / "caltech_subset"
     if cd.exists():
-        n = len(_list_images(cd))
-        counts["caltech"] = n
-        label_csv = output_dir / "camera_trap_labels.csv"
-        extra = ""
-        if label_csv.exists():
-            import pandas as pd
-            extra = f", {pd.read_csv(label_csv)['true_label'].nunique()} species in labels"
-        print(f"  caltech          : {n} images{extra}")
+        counts["caltech"] = len(_list_images(cd))
+        cdf = _load_caltech_labels(output_dir)
+        extra = f", {cdf['true_label'].nunique()} species" if cdf is not None else ""
+        print(f"  caltech          : {counts['caltech']} images{extra}")
     else:
-        print(f"  caltech          : not downloaded")
+        print("  caltech          : not downloaded")
 
-    # Eikelboom
     ed = output_dir / "eikelboom"
     if ed.exists():
         total = 0
@@ -510,56 +566,75 @@ def summarize(output_dir: Path = _DEFAULT_DIR) -> dict[str, int]:
         counts["eikelboom"] = total
         print(f"  eikelboom        : {total} images ({', '.join(parts)})")
     else:
-        print(f"  eikelboom        : not downloaded")
-
-    # HerdNet weights
-    wt = (output_dir.parent.parent / "models" / "general_2022"
-          / "20220413_HerdNet_General_dataset_2022.pth")
-    print(f"  herdnet_weights  : {'present' if wt.exists() else 'not downloaded'}")
+        print("  eikelboom        : not downloaded")
 
     return counts
 
 
 def show_samples(
-    dataset: str = "general_dataset",
+    dataset: str,
     n: int = 6,
     output_dir: Path = _DEFAULT_DIR,
+    title: Optional[str] = None,
 ) -> None:
     """Display a grid of sample images from a dataset.
 
-    Parameters
-    ----------
-    dataset : str
-        One of ``'general_dataset'``, ``'serengeti'``, ``'caltech'``, ``'eikelboom'``.
-    n : int
-        Number of images to show.
-    output_dir : Path
-        Root data directory.
+    Images are labelled with their species where labels are available.
 
     Example::
 
-        from week1.data.download_data import show_samples
         show_samples("caltech", n=9)
     """
     import matplotlib.pyplot as plt
     import numpy as np
-    from PIL import Image
+    from PIL import Image as PILImage
 
-    img_dir, title, label_fn = _resolve_dataset(dataset, output_dir)
-    images = _list_images(img_dir)
+    # Build label lookup
+    label_fn = None
+    if dataset == "serengeti":
+        img_dir = output_dir / "camera_trap" / "serengeti_subset"
+        display_title = "Snapshot Serengeti"
+        meta = _load_serengeti_meta(output_dir)
+        if meta:
+            cat_map = {c["id"]: c["name"] for c in meta["categories"]}
+            # Build image_id → filename → label (O(n), not O(n^2))
+            id_to_fname = {img["id"]: os.path.basename(img["file_name"])
+                           for img in meta["images"]}
+            fname_to_label = {}
+            for a in meta["annotations"]:
+                fname = id_to_fname.get(a["image_id"])
+                if fname:
+                    fname_to_label[fname] = cat_map.get(a["category_id"], "?")
+            label_fn = lambda p: fname_to_label.get(p.name, p.name)
+    elif dataset == "caltech":
+        img_dir = output_dir / "camera_trap" / "caltech_subset"
+        display_title = "Caltech Camera Traps"
+        cdf = _load_caltech_labels(output_dir)
+        if cdf is not None:
+            crop_to_label = dict(zip(cdf["crop"], cdf["true_label"]))
+            label_fn = lambda p: crop_to_label.get(p.name, p.name)
+    elif dataset == "general_dataset":
+        img_dir = output_dir / "general_dataset" / "test_sample"
+        display_title = "HerdNet General Dataset"
+    elif dataset == "eikelboom":
+        base = output_dir / "eikelboom"
+        img_dir = base / "train" if (base / "train").exists() else base
+        display_title = "Eikelboom 2019 (aerial)"
+    else:
+        raise ValueError(f"Unknown dataset: {dataset!r}. Choose from {DATASETS}")
+
+    images = _list_images(img_dir)[:n]
     if not images:
         print(f"No images found in {img_dir}")
         return
 
-    images = images[:n]
-    ncols = min(n, 4)
+    ncols = min(len(images), 4)
     nrows = (len(images) + ncols - 1) // ncols
     fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 3.5, nrows * 3.5))
-    axes_flat = np.array(axes).flatten() if n > 1 else [axes]
+    axes_flat = np.array(axes).flatten() if len(images) > 1 else [axes]
 
     for i, path in enumerate(images):
-        img = Image.open(path)
-        axes_flat[i].imshow(np.array(img))
+        axes_flat[i].imshow(np.array(PILImage.open(path)))
         label = label_fn(path) if label_fn else path.name
         axes_flat[i].set_title(label, fontsize=8)
         axes_flat[i].axis("off")
@@ -567,84 +642,212 @@ def show_samples(
     for ax in axes_flat[len(images):]:
         ax.axis("off")
 
-    plt.suptitle(f"{title} — {len(images)} samples", fontsize=11)
+    plt.suptitle(title or f"{display_title} — {len(images)} samples", fontsize=11)
     plt.tight_layout()
-    plt.show()
 
 
 def show_class_distribution(
-    dataset: str = "general_dataset",
+    dataset: str,
     output_dir: Path = _DEFAULT_DIR,
+    ax=None,
 ) -> None:
     """Bar chart of species/class distribution for a dataset.
 
-    Parameters
-    ----------
-    dataset : str
-        One of ``'general_dataset'``, ``'serengeti'``, ``'caltech'``, ``'eikelboom'``.
-    output_dir : Path
-        Root data directory.
+    Pass *ax* to draw into an existing matplotlib axes.
 
     Example::
 
-        from week1.data.download_data import show_class_distribution
         show_class_distribution("serengeti")
     """
     import matplotlib.pyplot as plt
     import pandas as pd
 
     if dataset == "general_dataset":
-        csv = output_dir / "general_dataset" / "test_sample.csv"
-        if not csv.exists():
-            print(f"Annotation CSV not found: {csv}")
-            return
-        df = pd.read_csv(csv)
+        df, _ = _load_herdnet_csv(output_dir)
+        if df is None:
+            print("General Dataset CSV not found"); return
         counts = df["labels"].value_counts()
         title = "General Dataset — annotations per species"
-
     elif dataset == "serengeti":
-        meta_path = output_dir / "camera_trap" / "serengeti_meta.json"
-        if not meta_path.exists():
-            print(f"Metadata not found: {meta_path}")
-            return
-        with open(meta_path) as f:
-            meta = json.load(f)
+        meta = _load_serengeti_meta(output_dir)
+        if meta is None:
+            print("Serengeti metadata not found"); return
         cat_map = {c["id"]: c["name"] for c in meta["categories"]}
         labels = [cat_map.get(a["category_id"], "unknown") for a in meta["annotations"]]
         counts = pd.Series(labels).value_counts()
-        title = "Snapshot Serengeti — annotations per species"
-
+        title = "Snapshot Serengeti — species distribution"
     elif dataset == "caltech":
-        csv = output_dir / "camera_trap_labels.csv"
-        if not csv.exists():
-            print(f"Labels not found: {csv}")
-            return
-        df = pd.read_csv(csv)
-        counts = df["true_label"].value_counts()
-        title = "Caltech Camera Traps — images per species"
-
+        cdf = _load_caltech_labels(output_dir)
+        if cdf is None:
+            print("Caltech labels not found"); return
+        counts = cdf["true_label"].value_counts()
+        title = "Caltech Camera Traps — species distribution"
     elif dataset == "eikelboom":
-        ed = output_dir / "eikelboom"
-        split_counts = {}
-        for split in ["train", "val", "test"]:
-            sp = ed / split
-            if sp.exists():
-                split_counts[split] = len(_list_images(sp))
-        if not split_counts:
-            print(f"No splits found in {ed}")
-            return
-        counts = pd.Series(split_counts)
-        title = "Eikelboom 2019 — images per split"
+        yolo = _parse_yolo_labels(output_dir / "eikelboom" / "train")
+        if not yolo:
+            print("No Eikelboom YOLO labels found"); return
+        counts = pd.Series(yolo).sort_values(ascending=False)
+        counts.index = [f"class {c}" for c in counts.index]
+        title = "Eikelboom — bounding boxes per class"
     else:
-        print(f"Unknown dataset: {dataset!r}. Choose from {DATASETS}")
-        return
+        raise ValueError(f"Unknown dataset: {dataset!r}. Choose from {DATASETS}")
 
-    fig, ax = plt.subplots(figsize=(7, max(3, len(counts) * 0.35)))
+    if ax is None:
+        _, ax = plt.subplots(figsize=(7, max(3, len(counts) * 0.35)))
     ax.barh(counts.index, counts.values, color="steelblue")
     ax.set_xlabel("Count")
     ax.set_title(title)
     plt.tight_layout()
-    plt.show()
+
+
+def show_bboxes(
+    dataset: str = "caltech",
+    n: int = 6,
+    output_dir: Path = _DEFAULT_DIR,
+) -> None:
+    """Show images with bounding boxes drawn.
+
+    Supports ``'serengeti'`` (COCO format from metadata JSON),
+    ``'caltech'`` (COCO format from CSV), and ``'eikelboom'``
+    (YOLO format from .txt label files).
+
+    Example::
+
+        show_bboxes("serengeti", n=6)
+        show_bboxes("eikelboom", n=6)
+    """
+    import matplotlib.patches as patches
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from PIL import Image as PILImage
+
+    if dataset == "serengeti":
+        meta = _load_serengeti_meta(output_dir)
+        if meta is None:
+            print("Serengeti metadata not found"); return
+        cat_map = {c["id"]: c["name"] for c in meta["categories"]}
+        # Build image_id → bbox list
+        id_to_bboxes: dict[str, list] = {}
+        for a in meta["annotations"]:
+            if "bbox" in a:
+                id_to_bboxes.setdefault(a["image_id"], []).append(a)
+        # Pick images that have at least one bbox
+        imgs_with_box = [img for img in meta["images"] if img["id"] in id_to_bboxes]
+        if not imgs_with_box:
+            print("No bounding box annotations in Serengeti subset"); return
+        imgs_with_box = imgs_with_box[:n]
+
+        img_dir = output_dir / "camera_trap" / "serengeti_subset"
+        ncols = min(len(imgs_with_box), 3)
+        nrows = (len(imgs_with_box) + ncols - 1) // ncols
+        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
+        axes_flat = np.array(axes).flatten() if len(imgs_with_box) > 1 else [axes]
+
+        shown = 0
+        for img_data in imgs_with_box:
+            path = img_dir / os.path.basename(img_data["file_name"])
+            if not path.exists():
+                continue
+            ax = axes_flat[shown]
+            ax.imshow(np.array(PILImage.open(path)))
+            for a in id_to_bboxes[img_data["id"]]:
+                x, y, w, h = a["bbox"]
+                label = cat_map.get(a.get("category_id"), "")
+                rect = patches.Rectangle(
+                    (x, y), w, h,
+                    linewidth=2, edgecolor="lime", facecolor="none",
+                )
+                ax.add_patch(rect)
+                ax.text(x, y - 2, label, fontsize=7, color="lime",
+                        backgroundcolor="black")
+            ax.set_title(os.path.basename(img_data["file_name"]), fontsize=8)
+            ax.axis("off")
+            shown += 1
+
+        for ax in axes_flat[shown:]:
+            ax.axis("off")
+        plt.suptitle(f"Snapshot Serengeti — COCO bounding boxes "
+                     f"({len(id_to_bboxes)} images have boxes)", fontsize=11)
+        plt.tight_layout()
+
+    elif dataset == "caltech":
+        cdf = _load_caltech_labels(output_dir)
+        if cdf is None:
+            print("Caltech labels not found"); return
+        with_box = cdf.dropna(subset=["bbox_x"])
+        if with_box.empty:
+            print("No bounding box annotations in Caltech subset"); return
+
+        img_dir = output_dir / "camera_trap" / "caltech_subset"
+        rows = list(with_box.itertuples())[:n]
+        ncols = min(len(rows), 3)
+        nrows = (len(rows) + ncols - 1) // ncols
+        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
+        axes_flat = np.array(axes).flatten() if len(rows) > 1 else [axes]
+
+        for i, row in enumerate(rows):
+            path = img_dir / row.crop
+            if not path.exists():
+                continue
+            ax = axes_flat[i]
+            ax.imshow(np.array(PILImage.open(path)))
+            rect = patches.Rectangle(
+                (row.bbox_x, row.bbox_y), row.bbox_w, row.bbox_h,
+                linewidth=2, edgecolor="lime", facecolor="none",
+            )
+            ax.add_patch(rect)
+            ax.set_title(f"{row.true_label}\n"
+                         f"[{int(row.bbox_x)}, {int(row.bbox_y)}, "
+                         f"{int(row.bbox_w)}, {int(row.bbox_h)}]", fontsize=8)
+            ax.axis("off")
+
+        for ax in axes_flat[len(rows):]:
+            ax.axis("off")
+        plt.suptitle(f"Camera trap — COCO bounding boxes "
+                     f"({len(with_box)}/{len(cdf)} have boxes)", fontsize=11)
+        plt.tight_layout()
+
+    elif dataset == "eikelboom":
+        train_dir = output_dir / "eikelboom" / "train"
+        images = _list_images(train_dir)[:n]
+        if not images:
+            print("No Eikelboom train images found"); return
+
+        ncols = min(len(images), 3)
+        nrows = (len(images) + ncols - 1) // ncols
+        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
+        axes_flat = np.array(axes).flatten() if len(images) > 1 else [axes]
+
+        for i, img_path in enumerate(images):
+            ax = axes_flat[i]
+            img = PILImage.open(img_path)
+            img_arr = np.array(img)
+            ax.imshow(img_arr)
+            h, w = img_arr.shape[:2]
+
+            # Draw YOLO boxes if label file exists
+            label_path = img_path.with_suffix(".txt")
+            if label_path.exists():
+                for line in label_path.read_text().strip().splitlines():
+                    parts = line.strip().split()
+                    if len(parts) >= 5:
+                        cx, cy, bw, bh = (float(x) for x in parts[1:5])
+                        x0 = (cx - bw / 2) * w
+                        y0 = (cy - bh / 2) * h
+                        rect = patches.Rectangle(
+                            (x0, y0), bw * w, bh * h,
+                            linewidth=2, edgecolor="lime", facecolor="none",
+                        )
+                        ax.add_patch(rect)
+            ax.set_title(img_path.name, fontsize=8)
+            ax.axis("off")
+
+        for ax in axes_flat[len(images):]:
+            ax.axis("off")
+        plt.suptitle("Eikelboom — aerial tiles with YOLO bounding boxes", fontsize=11)
+        plt.tight_layout()
+    else:
+        raise ValueError(f"show_bboxes supports 'caltech' or 'eikelboom', got {dataset!r}")
 
 
 def show_annotated_tiles(
@@ -657,25 +860,26 @@ def show_annotated_tiles(
 
     Example::
 
-        from week1.data.download_data import show_annotated_tiles
         show_annotated_tiles(n=4)
     """
     import matplotlib.pyplot as plt
     import numpy as np
-    import pandas as pd
-    from PIL import Image
+    from PIL import Image as PILImage
 
-    csv = output_dir / "general_dataset" / "test_sample.csv"
-    img_dir = output_dir / "general_dataset" / "test_sample"
-    if not csv.exists():
-        print(f"Annotation CSV not found: {csv}")
-        return
+    df, img_dir = _load_herdnet_csv(output_dir)
+    if df is None:
+        print("General Dataset CSV not found"); return
 
-    df = pd.read_csv(csv)
-    top = df.groupby("images").size().sort_values(ascending=False).head(n)
+    per_tile = df.groupby("images").size()
+    print(f"Tiles: {len(_list_images(img_dir))}  |  "
+          f"Annotations: {len(df)}  |  "
+          f"Annotated tiles: {df['images'].nunique()}  |  "
+          f"Median per tile: {per_tile.median():.0f}  |  "
+          f"Max: {per_tile.max()}")
+
+    top = per_tile.sort_values(ascending=False).head(n)
     ncols = min(n, 4)
     nrows = (len(top) + ncols - 1) // ncols
-
     fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4.5, nrows * 4.5))
     axes_flat = np.array(axes).flatten() if n > 1 else [axes]
 
@@ -684,9 +888,8 @@ def show_annotated_tiles(
         if not path.exists():
             axes_flat[i].set_title(f"{name} — not found")
             continue
-        img = np.array(Image.open(path))
         tile_df = df[df["images"] == name]
-        axes_flat[i].imshow(img)
+        axes_flat[i].imshow(np.array(PILImage.open(path)))
         axes_flat[i].scatter(
             tile_df["x"], tile_df["y"],
             c="red", s=25, marker="+", linewidths=1.5,
@@ -697,61 +900,8 @@ def show_annotated_tiles(
     for ax in axes_flat[len(top):]:
         ax.axis("off")
 
-    plt.suptitle("Most densely annotated tiles (General Dataset)", fontsize=11)
+    plt.suptitle("Most densely annotated tiles — red + = one animal", fontsize=11)
     plt.tight_layout()
-    plt.show()
-
-
-def _resolve_dataset(
-    dataset: str, output_dir: Path,
-) -> tuple[Path, str, Optional[callable]]:
-    """Return (image_dir, display_title, label_function) for a dataset name."""
-    if dataset == "general_dataset":
-        return (
-            output_dir / "general_dataset" / "test_sample",
-            "General Dataset (aerial tiles)",
-            None,
-        )
-    elif dataset == "serengeti":
-        meta_path = output_dir / "camera_trap" / "serengeti_meta.json"
-        label_fn = None
-        if meta_path.exists():
-            with open(meta_path) as f:
-                meta = json.load(f)
-            cat_map = {c["id"]: c["name"] for c in meta["categories"]}
-            fname_to_label = {}
-            for a in meta["annotations"]:
-                for img in meta["images"]:
-                    if img["id"] == a["image_id"]:
-                        fname_to_label[os.path.basename(img["file_name"])] = (
-                            cat_map.get(a["category_id"], "?")
-                        )
-            label_fn = lambda p: fname_to_label.get(p.name, p.name)
-        return (
-            output_dir / "camera_trap" / "serengeti_subset",
-            "Snapshot Serengeti",
-            label_fn,
-        )
-    elif dataset == "caltech":
-        labels_csv = output_dir / "camera_trap_labels.csv"
-        label_fn = None
-        if labels_csv.exists():
-            import pandas as pd
-            ldf = pd.read_csv(labels_csv)
-            crop_to_label = dict(zip(ldf["crop"], ldf["true_label"]))
-            label_fn = lambda p: crop_to_label.get(p.name, p.name)
-        return (
-            output_dir / "camera_trap" / "caltech_subset",
-            "Caltech Camera Traps",
-            label_fn,
-        )
-    elif dataset == "eikelboom":
-        # Show from the train split by default
-        base = output_dir / "eikelboom"
-        img_dir = base / "train" if (base / "train").exists() else base
-        return (img_dir, "Eikelboom 2019 (aerial)", None)
-    else:
-        raise ValueError(f"Unknown dataset: {dataset!r}. Choose from {DATASETS}")
 
 
 # ---------------------------------------------------------------------------
