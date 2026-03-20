@@ -18,7 +18,6 @@ dependencies = [
     "scipy",
     "matplotlib",
     "tqdm",
-    "marimo",
     "albumentations",
     "huggingface_hub",
     "requests",
@@ -72,6 +71,8 @@ dev = [
     "pytest",
     "jupyterlab",
     "jupytext",
+    "nbconvert",
+    "ipykernel",
 ]
 
 [tool.setuptools.packages.find]

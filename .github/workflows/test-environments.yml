@@ -43,7 +43,7 @@ jobs:
           "
 
       - name: Run tests
-        run: pytest tests/ -v --timeout=120 -x
+        run: pytest tests/ -v -x
 
   test-training:
     name: fit-training
@@ -76,7 +76,7 @@ jobs:
           "
 
       - name: Run tests
-        run: pytest tests/ -v --timeout=120 -x
+        run: pytest tests/ -v -x
 
   test-herdnet:
     name: fit-herdnet
@@ -106,4 +106,4 @@ jobs:
           "
 
       - name: Run tests
-        run: pytest tests/ -v --timeout=120 -x
+        run: pytest tests/ -v -x

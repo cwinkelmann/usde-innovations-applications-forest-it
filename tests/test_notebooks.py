@@ -1,9 +1,9 @@
-"""Integration tests for Marimo notebooks and dataset downloads.
+"""Integration tests for Jupyter notebooks and dataset downloads.
 
 These tests verify that:
 1. The download_data module functions work correctly
 2. Downloaded datasets have the expected structure
-3. Marimo notebooks can be executed without errors
+3. Jupyter notebooks execute top-to-bottom without errors
 
 Marked as @pytest.mark.integration — skipped by default in fast mode.
 Run with: pytest tests/test_notebooks.py -v
@@ -168,53 +168,81 @@ class TestSummarize:
 
 
 # ---------------------------------------------------------------------------
-# Marimo notebook execution tests
+# Jupyter notebook execution tests
 # ---------------------------------------------------------------------------
+
+
+NOTEBOOKS_DIR = Path(__file__).parent.parent / "week1" / "practicals"
+
+# (notebook filename, conda environment) — in execution order.
+# Later notebooks may depend on outputs from earlier ones.
+NOTEBOOKS = [
+    ("practical_3_megadetector_legacy.ipynb", "fit-megadetector"),
+    ("practical_3_megadetector_ultralytics.ipynb", "fit-training"),
+    ("practical_5_species_classification.ipynb", "fit-training"),
+]
+
+
+def _execute_notebook(notebook_path: Path, conda_env: str, timeout: int = 600):
+    """Execute a Jupyter notebook in a specific conda environment.
+
+    Uses `conda run -n <env>` so the notebook runs with the correct
+    dependencies without needing kernel registration.
+
+    Returns (success: bool, error_message: str).
+    """
+    import subprocess
+    result = subprocess.run(
+        [
+            "conda", "run", "-n", conda_env, "--no-capture-output",
+            "jupyter", "nbconvert",
+            "--to", "notebook",
+            "--execute",
+            f"--ExecutePreprocessor.timeout={timeout}",
+            "--output", "/dev/null",
+            str(notebook_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=timeout + 60,
+        cwd=str(notebook_path.parent),
+    )
+    if result.returncode != 0:
+        err = result.stderr or result.stdout
+        return False, err[-2000:]
+    return True, ""
+
+
+def _conda_env_exists(env_name: str) -> bool:
+    """Check if a conda environment exists."""
+    import subprocess
+    result = subprocess.run(
+        ["conda", "env", "list"],
+        capture_output=True, text=True,
+    )
+    return env_name in result.stdout
 
 
 @pytest.mark.integration
 @pytest.mark.slow
-class TestMarimoNotebooks:
-    """Test that Marimo notebooks execute without errors.
+class TestNotebookExecution:
+    """Test that Jupyter notebooks execute top-to-bottom without errors.
 
-    These tests run the actual notebook files. They are slow because they
-    download data and produce plots.
+    Each notebook runs in its designated conda environment via
+    `conda run -n <env>`. Notebooks are tested in order because
+    later practicals may depend on outputs from earlier ones.
     """
 
-    NOTEBOOKS_DIR = Path(__file__).parent.parent / "week1" / "practicals"
-
-    def _run_notebook(self, notebook_path: Path):
-        """Execute a Marimo notebook and return the exit code."""
-        import subprocess
-        result = subprocess.run(
-            ["marimo", "run", "--headless", str(notebook_path)],
-            capture_output=True,
-            text=True,
-            timeout=600,  # 10 min max
-            cwd=str(notebook_path.parent),
-        )
-        return result
-
-    def test_p1_exists(self):
-        p1 = self.NOTEBOOKS_DIR / "p1_visual_image_dataset.py"
-        assert p1.exists(), f"P1 notebook not found: {p1}"
-
-    def test_p1_is_valid_python(self):
-        """P1 should parse as valid Python."""
-        import ast
-        p1 = self.NOTEBOOKS_DIR / "p1_visual_image_dataset.py"
-        source = p1.read_text()
-        ast.parse(source)  # raises SyntaxError if invalid
-
-    def test_p1_imports_download_data(self):
-        """P1 should import from download_data module."""
-        p1 = self.NOTEBOOKS_DIR / "p1_visual_image_dataset.py"
-        source = p1.read_text()
-        assert "download_data" in source, "P1 does not reference download_data"
-
-    def test_p1_has_marimo_app(self):
-        """P1 should define a marimo App."""
-        p1 = self.NOTEBOOKS_DIR / "p1_visual_image_dataset.py"
-        source = p1.read_text()
-        assert "marimo.App" in source
-        assert "@app.cell" in source
+    @pytest.mark.parametrize(
+        "notebook, conda_env",
+        NOTEBOOKS,
+        ids=[Path(n).stem for n, _ in NOTEBOOKS],
+    )
+    def test_notebook_runs(self, notebook, conda_env):
+        nb_path = NOTEBOOKS_DIR / notebook
+        if not nb_path.exists():
+            pytest.skip(f"{notebook} not yet created")
+        if not _conda_env_exists(conda_env):
+            pytest.skip(f"conda env '{conda_env}' not installed")
+        success, error = _execute_notebook(nb_path, conda_env)
+        assert success, f"{notebook} failed in {conda_env}:\n{error}"
