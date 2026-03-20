@@ -23,4 +23,12 @@ From there we could go to the problem of tiny object detection and compare Megad
 
 
 ### Geospatial data?
-Up to segmentation?
+Up to segmentation? using TorchGeo
+
+
+### Extracurricalar:
+
+- use the BAMBI QGIS to work with drone data
+- look into AddaxAI
+- look into TorchGeo for geospatial deep learning tools
+- look into the new HuggingFace geospatial datasets and models (e.g. CanopyRS for tree crown delineation)

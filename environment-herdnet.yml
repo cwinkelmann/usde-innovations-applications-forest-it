@@ -1,0 +1,52 @@
+# fit-herdnet — HerdNet training & geospatial pipeline
+#
+# Only needed if you are running the HerdNet notebook or pipeline scripts.
+# Students doing only Practicals 1–8 can skip this environment.
+#
+# Install:
+#   conda env create -f environment-herdnet.yml
+#   conda activate fit-herdnet
+#   pip install git+https://github.com/cwinkelmann/HerdNet.git
+#
+# Colab (no conda needed, but GDAL requires special setup):
+#   !apt-get install -y gdal-bin libgdal-dev
+#   !pip install ".[herdnet,dev]" GDAL rasterio geopandas
+#   !pip install git+https://github.com/cwinkelmann/HerdNet.git
+#
+# Verify:
+#   python -c "import animaloc; print(f'OK (animaloc {animaloc.__version__})')"
+
+name: fit-herdnet
+
+channels:
+  - pytorch
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip
+
+  # PyTorch — conda provides proper CPU/GPU builds per platform
+  - pytorch
+  - torchvision
+
+  # Geospatial stack — MUST be installed via conda, not pip
+  - gdal
+  - rasterio
+  - geopandas
+  - fiona
+  - shapely
+
+  # Scientific Python (conda builds, faster solver)
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - pillow
+  - scikit-learn
+
+  - pip:
+      - -e ".[herdnet,dev]"
+
+      # HerdNet (animaloc) — install separately:
+      #   pip install git+https://github.com/cwinkelmann/HerdNet.git

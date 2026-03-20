@@ -1,0 +1,41 @@
+# fit-training — Full training & inference pipeline (Practicals 3–8)
+#
+# Covers: P3 (YOLOv8 + SAHI), P4 (detection exploration), P5 (timm classifier),
+#         P6 (evaluation), P7 (SAM segmentation), P8 (wrap-up)
+# Does NOT include: megadetector (see environment-megadetector.yml)
+#                   GDAL/rasterio (see environment-herdnet.yml)
+#
+# Install:
+#   conda env create -f environment-training.yml
+#   conda activate fit-training
+#
+# Colab (no conda needed):
+#   !pip install ".[training,dev]"
+#
+# Verify:
+#   python -c "import ultralytics, sahi, timm; print('fit-training OK')"
+
+name: fit-training
+
+channels:
+  - pytorch
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip
+
+  # PyTorch — conda provides proper CPU/GPU builds per platform
+  - pytorch
+  - torchvision
+
+  # Scientific Python (conda builds, faster solver)
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - pillow
+  - scikit-learn
+
+  - pip:
+      - -e ".[training,dev]"

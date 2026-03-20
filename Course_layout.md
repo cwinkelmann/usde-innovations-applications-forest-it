@@ -12,6 +12,7 @@ By the end of Week 1, students can:
 - Describe the camera trap workflow and how MegaDetector accelerates it
 - Distinguish between detection, classification, and segmentation tasks
 - Apply a pre-trained classification model to a small wildlife dataset
+- Train a bounding box detection model like YOLO, train a Classification Model like ResNet or a point based detection (e.g. HerdNet) on a custom dataset
 - Understand segmentation conceptually and why it matters for remote sensing tasks
 
 ---
@@ -28,7 +29,7 @@ By the end of Week 1, students can:
 - The sensing modality landscape: drones, camera traps, satellites, acoustics, RADAR
   → Keep this visual and fast-paced; goal is curiosity, not completeness
 
-**Block 2 — UAV Surveys in Wildlife Ecology (60 min)**
+**Block 2 — TODO move this to Day 2 UAV Surveys in Wildlife Ecology (60 min)**
 - How drone surveys work: flight planning, GSD, orthomosaics
 - From pixel to population: the counting problem
 - Case study: Iguanas From Above (Galápagos marine iguanas)

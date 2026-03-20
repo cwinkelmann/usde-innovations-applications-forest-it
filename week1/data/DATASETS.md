@@ -13,19 +13,22 @@ python week1/data/download_data.py --n-images 20  # exact count per source
 
 ## Dataset Overview
 
-| Dataset | Source | Annotation | License | Used in |
-|---------|--------|------------|---------|---------|
-| [HerdNet General Dataset](https://huggingface.co/datasets/karisu/General_Dataset) | HuggingFace | Point annotations (CSV) | ULiège Open Data | P1 (aerial), HerdNet notebook |
-| [Iguanas From Above](https://figshare.com/articles/dataset/25196306) | FigShare | Point counts + expert labels | CC-BY 4.0 | P1, P2, case study |
-| [Snapshot Serengeti](https://lila.science/datasets/snapshot-serengeti) | LILA BC | Species labels + COCO bboxes | CDLA Permissive | P1, P3, P4 |
-| [Caltech Camera Traps](https://lila.science/datasets/caltech-camera-traps) | LILA BC | COCO bboxes + species CSV | CDLA Permissive | P3, P5, P6 |
-| [Eikelboom 2019](https://huggingface.co/datasets/karisu/Eikelboom2019) | HuggingFace | YOLO bboxes (3 species) | CC-BY 4.0 | P1, P3 (SAHI) |
-| [HerdNet pretrained weights](https://huggingface.co/karisu/HerdNet) | HuggingFace | `.pth` checkpoint | — | HerdNet notebook |
+| Dataset                                                                            | Source | Annotation | License | Used in |
+|------------------------------------------------------------------------------------|--------|------------|---------|---------|
+| [HerdNet General Dataset](https://huggingface.co/datasets/karisu/General_Dataset)  | HuggingFace | Point annotations (CSV) | ULiège Open Data | P1 (aerial), HerdNet notebook |
+| [Snapshot Serengeti](https://lila.science/datasets/snapshot-serengeti)             | LILA BC | Species labels + COCO bboxes | CDLA Permissive | P1, P3, P4 |
+| [Caltech Camera Traps](https://lila.science/datasets/caltech-camera-traps)         | LILA BC | COCO bboxes + species CSV | CDLA Permissive | P3, P5, P6 |
+| [Eikelboom 2019](https://huggingface.co/datasets/karisu/Eikelboom2019)             | HuggingFace | YOLO bboxes (3 species) | CC-BY 4.0 | P1, P3 (SAHI) |
+| [MMLA Wilds](https://huggingface.co/datasets/imageomics/mmla_wilds)                | HuggingFace | YOLO bboxes (4 species) | CC-BY 4.0 | P1, P3 |
+| [HerdNet pretrained weights](https://huggingface.co/karisu/HerdNet)                | HuggingFace | `.pth` checkpoint | — | HerdNet notebook |
 
-### Generale good sources for Datasets
-Tree Crown Deliniateion - canpoyRS https://github.com/hugobaudchon/CanopyRS https://huggingface.co/CanopyRS 
-https://lila.science/otherdatasets/
+### Other Dataset Sources (Reference)
 
+| Source | URL | Notes |
+|--------|-----|-------|
+| LILA BC (all datasets) | https://lila.science/otherdatasets/ | Largest camera trap data repository |
+| CanopyRS (tree crown delineation) | https://huggingface.co/CanopyRS | Canopy segmentation datasets |
+| BAMBI (thermal wildlife) | https://github.com/bambi-eco/Dataset | Thermal drone imagery |
 
 ---
 
@@ -57,6 +60,7 @@ Pre-tiled aerial images of African mammals with **point annotations** — one
 - **Citation:** Delplanque et al. (2023), ISPRS J. Photogrammetry & Remote Sensing
 
 ### Iguanas From Above
+TODO, this is not correct. The dataset is not public.
 
 Case study dataset: 57,838 drone tiles (1000 x 1000 px) from the Galapagos
 Islands annotated by 13,000+ citizen scientists and expert biologists.
@@ -96,6 +100,19 @@ captures — ideal for demonstrating tiled inference with SAHI.
 - **Original:** [4TU.ResearchData](https://data.4tu.nl/articles/_/12713903/1)
 - **Citation:** Eikelboom et al. (2019), Methods in Ecology and Evolution
 
+### MMLA Wilds
+
+Multi-species aerial drone imagery from The Wilds conservation centre (Ohio).
+Four species annotated with YOLO-format bounding boxes. Collected using
+DJI Mavic Mini and Parrot Anafi drones, some missions semi-autonomous
+via the WildWing system.
+
+- **Species:** giraffe, Grevy's zebra, Persian onager, African painted dog
+- **Format:** YOLO `.txt` label files per image
+- **Source:** [imageomics/mmla_wilds](https://huggingface.co/datasets/imageomics/mmla_wilds)
+- **Part of:** [MMLA collection](https://huggingface.co/collections/imageomics/mmla) (includes Mpala, Ol Pejeta)
+- **Citation:** Imageomics / The Wilds
+
 ---
 
 ## Where Data Lands After Download
@@ -112,6 +129,7 @@ week1/data/
   camera_trap_labels.csv  <- Caltech labels + bboxes
   eikelboom/
     train/ val/ test/     <- aerial drone images + YOLO .txt labels
+  mmla_wilds/             <- MMLA Wilds drone images + YOLO labels
 models/
   general_2022/           <- HerdNet pretrained weights (.pth + config.yaml)
 ```

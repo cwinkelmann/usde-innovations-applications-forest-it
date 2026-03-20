@@ -9,9 +9,8 @@ description = "Aerial wildlife detection pipeline for visual images"
 requires-python = ">=3.10"
 
 # Base dependencies — packages that coexist without conflicts.
-# PyTorch must be installed via conda BEFORE `pip install -e "."`.
-# megadetector, label-studio, and wandb have protobuf conflicts
-# and must be installed via optional extras (see below).
+# PyTorch must be installed via conda BEFORE `pip install -e "."`,
+# or is pre-installed in Google Colab.
 dependencies = [
     "numpy",
     "pillow",
@@ -28,13 +27,38 @@ dependencies = [
 
 [project.optional-dependencies]
 
-# MegaDetector environment (P3–P6): megadetector pins protobuf<=3.20.1,
-# which conflicts with wandb and label-studio. Install in its own env.
+# ── Environment extras (match the three conda envs) ─────────────────
+#
+# Local:  conda env create -f environment-<name>.yml
+# Colab:  !pip install ".[megadetector]"  (pytorch is pre-installed)
+
+# fit-megadetector (P1–P2): data exploration + MegaDetector inference
+# Note: megadetector pins protobuf<=3.20.1, conflicts with wandb/label-studio
 megadetector = [
     "megadetector",
+]
+
+# fit-training (P3–P8): full training & inference pipeline
+# Does NOT include megadetector (protobuf conflict) or GDAL
+training = [
+    "ultralytics",
     "sahi",
     "timm",
+    "segment-anything",
+    "scikit-learn",
+    "wget",
 ]
+
+# fit-herdnet: HerdNet + geospatial pipeline
+# GDAL/rasterio must be installed via conda (not pip).
+# animaloc (HerdNet) must be installed separately:
+#   pip install git+https://github.com/cwinkelmann/HerdNet.git
+herdnet = [
+    "wandb",
+    "animaloc @ git+https://github.com/cwinkelmann/HerdNet.git",
+]
+
+# ── Standalone extras ───────────────────────────────────────────────
 
 # Label Studio for annotation (P2): needs protobuf>=6.31.1,
 # conflicts with megadetector. Best run via Docker instead:
@@ -43,31 +67,11 @@ labelstudio = [
     "label-studio",
 ]
 
-# Experiment tracking: wandb needs protobuf>4.21.0,
-# conflicts with megadetector's protobuf<=3.20.1
-tracking = [
-    "wandb",
-    "omegaconf",
-]
-
-# YOLOv8 training (mainline ultralytics, separate from megadetector's fork)
-yolo = [
-    "ultralytics",
-]
-
-# Segmentation models (P7, HerdNet pipeline)
-segmentation = [
-    "segmentation-models-pytorch",
-    "transformers",
-]
-
-# HerdNet environment: tracking + segmentation + training utilities.
-# Does NOT include megadetector (they conflict via ultralytics forks).
-# GDAL/rasterio must be installed via conda before this.
-herdnet = [
-    "wildlife-detection[tracking,segmentation]",
-    "omegaconf",
-    "accelerate>=1.1.0",
+# Development tools (not needed in Colab)
+dev = [
+    "pytest",
+    "jupyterlab",
+    "jupytext",
 ]
 
 [tool.setuptools.packages.find]

@@ -1,0 +1,109 @@
+name: Test Environment Installation
+
+on:
+  push:
+    paths:
+      - "pyproject.toml"
+      - "environment-*.yml"
+      - "src/**"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "environment-*.yml"
+      - "src/**"
+  workflow_dispatch:
+
+jobs:
+  test-megadetector:
+    name: fit-megadetector
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment-megadetector.yml
+          activate-environment: fit-megadetector
+          miniforge-version: latest
+
+      - name: Verify imports
+        run: |
+          python -c "
+          import megadetector
+          from megadetector.detection.run_detector import load_detector
+          from megadetector.detection.run_detector_batch import load_and_run_detector_batch
+          import torch
+          import numpy, pandas, matplotlib, PIL
+          import wildlife_detection
+          import marimo
+          print('fit-megadetector: all imports OK')
+          "
+
+      - name: Run tests
+        run: pytest tests/ -v --timeout=120 -x
+
+  test-training:
+    name: fit-training
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment-training.yml
+          activate-environment: fit-training
+          miniforge-version: latest
+
+      - name: Verify imports
+        run: |
+          python -c "
+          import ultralytics
+          import sahi
+          import timm
+          import segment_anything
+          import torch
+          import sklearn
+          import numpy, pandas, matplotlib, PIL
+          import wildlife_detection
+          import marimo
+          print('fit-training: all imports OK')
+          "
+
+      - name: Run tests
+        run: pytest tests/ -v --timeout=120 -x
+
+  test-herdnet:
+    name: fit-herdnet
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment-herdnet.yml
+          activate-environment: fit-herdnet
+          miniforge-version: latest
+
+      - name: Verify imports
+        run: |
+          python -c "
+          import animaloc
+          import wandb
+          import torch
+          import numpy, pandas, matplotlib, PIL
+          import wildlife_detection
+          import marimo
+          print('fit-herdnet: all imports OK')
+          "
+
+      - name: Run tests
+        run: pytest tests/ -v --timeout=120 -x

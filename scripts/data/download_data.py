@@ -414,6 +414,73 @@ def download_eikelboom(
     return out
 
 
+def download_mmla_wilds(
+    n_images: Optional[int] = None,
+    output_dir: Path = _DEFAULT_DIR,
+) -> Path:
+    """imageomics/mmla_wilds — drone wildlife dataset from HuggingFace.
+
+    Multi-species aerial imagery (giraffe, Grevy's zebra, Persian onager,
+    African painted dog) with YOLO-format bounding box annotations.
+    Collected at The Wilds, Ohio using DJI Mavic Mini and Parrot Anafi drones.
+
+    Source: https://huggingface.co/datasets/imageomics/mmla_wilds
+
+    Parameters
+    ----------
+    n_images : int or None
+        Max images to download per split. None downloads all.
+    output_dir : Path
+        Parent directory. Dataset goes into ``output_dir / mmla_wilds``.
+
+    Returns
+    -------
+    Path to the dataset directory.
+    """
+    out = output_dir / "mmla_wilds"
+    out.mkdir(parents=True, exist_ok=True)
+    repo_id = "imageomics/mmla_wilds"
+    print(f"\n=== MMLA Wilds (n={n_images or 'all'} per split) ===")
+
+    if n_images is None:
+        from huggingface_hub import snapshot_download
+        snapshot_download(
+            repo_id=repo_id, repo_type="dataset", local_dir=str(out),
+        )
+    else:
+        all_files = [
+            entry.rfilename
+            for entry in list_repo_tree(repo_id, repo_type="dataset", recursive=True)
+            if hasattr(entry, "rfilename")
+        ]
+        # Download non-image files (metadata, labels, configs, yaml)
+        non_images = [f for f in all_files if not _is_image(f)]
+        for f in non_images:
+            hf_hub_download(repo_id=repo_id, repo_type="dataset",
+                            filename=f, local_dir=str(out))
+
+        # Group images by directory (splits or species folders) and limit per group
+        from collections import defaultdict
+        group_files: dict[str, list[str]] = defaultdict(list)
+        for f in sorted(all_files):
+            if _is_image(f):
+                group = f.split("/")[0] if "/" in f else ""
+                group_files[group].append(f)
+
+        total = 0
+        for group, files in group_files.items():
+            to_download = files[:n_images]
+            for f in to_download:
+                hf_hub_download(repo_id=repo_id, repo_type="dataset",
+                                filename=f, local_dir=str(out))
+            total += len(to_download)
+            print(f"  {group or 'root'}: {len(to_download)}/{len(files)} images")
+        print(f"  Downloaded {total} images total")
+
+    print(f"  Saved to {out}")
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Convenience wrapper
 # ---------------------------------------------------------------------------
@@ -448,6 +515,7 @@ def download_all(
     results["serengeti"] = download_serengeti(n_images, output_dir)
     results["caltech"] = download_caltech(n_images, output_dir)
     results["eikelboom"] = download_eikelboom(n_images, output_dir)
+    results["mmla_wilds"] = download_mmla_wilds(n_images, output_dir)
 
     print("\n" + "=" * 50)
     print("Week 1 datasets ready.")
@@ -465,7 +533,7 @@ def download_all(
 # In Marimo, the figure is captured automatically by the cell.
 # In scripts/REPL, call plt.show() yourself after calling these functions.
 
-DATASETS = ("general_dataset", "serengeti", "caltech", "eikelboom")
+DATASETS = ("general_dataset", "serengeti", "caltech", "eikelboom", "mmla_wilds")
 
 
 def _list_images(directory: Path) -> list[Path]:
@@ -568,6 +636,17 @@ def summarize(output_dir: Path = _DEFAULT_DIR) -> dict[str, int]:
     else:
         print("  eikelboom        : not downloaded")
 
+    md = output_dir / "mmla_wilds"
+    if md.exists():
+        all_imgs = []
+        for d in md.rglob("*"):
+            if d.is_file() and d.suffix.lower() in IMAGE_EXTENSIONS:
+                all_imgs.append(d)
+        counts["mmla_wilds"] = len(all_imgs)
+        print(f"  mmla_wilds       : {len(all_imgs)} images")
+    else:
+        print("  mmla_wilds       : not downloaded")
+
     return counts
 
 
@@ -620,6 +699,10 @@ def show_samples(
         base = output_dir / "eikelboom"
         img_dir = base / "train" if (base / "train").exists() else base
         display_title = "Eikelboom 2019 (aerial)"
+    elif dataset == "mmla_wilds":
+        base = output_dir / "mmla_wilds"
+        img_dir = base / "train" / "images" if (base / "train" / "images").exists() else base
+        display_title = "MMLA Wilds (drone wildlife)"
     else:
         raise ValueError(f"Unknown dataset: {dataset!r}. Choose from {DATASETS}")
 
@@ -689,6 +772,17 @@ def show_class_distribution(
         counts = pd.Series(yolo).sort_values(ascending=False)
         counts.index = [f"class {c}" for c in counts.index]
         title = "Eikelboom — bounding boxes per class"
+    elif dataset == "mmla_wilds":
+        # Try train/labels first, then labels/ at root
+        labels_dir = output_dir / "mmla_wilds" / "train" / "labels"
+        if not labels_dir.exists():
+            labels_dir = output_dir / "mmla_wilds" / "labels"
+        yolo = _parse_yolo_labels(labels_dir)
+        if not yolo:
+            print("No MMLA Wilds YOLO labels found"); return
+        counts = pd.Series(yolo).sort_values(ascending=False)
+        counts.index = [f"class {c}" for c in counts.index]
+        title = "MMLA Wilds — bounding boxes per class"
     else:
         raise ValueError(f"Unknown dataset: {dataset!r}. Choose from {DATASETS}")
 
