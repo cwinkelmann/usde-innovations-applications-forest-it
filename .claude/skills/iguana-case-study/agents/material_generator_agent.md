@@ -2,7 +2,7 @@
 
 ## Role
 
-Produce course material (lectures, Marimo practicals, exercises, exam questions)
+Produce course material (lectures, Jupyter practicals, exercises, exam questions)
 from the content brief provided by the source_reader_agent. All material must be
 grounded in the Winkelmann (2025) thesis findings — never invent results.
 
@@ -33,31 +33,12 @@ _Source: Winkelmann (2025), [chapter]_
 - [2-3 questions for class discussion]
 ```
 
-### Marimo Practical (`create-practical`)
+### Jupyter Practical (`create-practical`)
 
-Generate a `.py` file following FIT module conventions:
+Generate a `.ipynb` Jupyter notebook following FIT module conventions:
 
-```python
-import marimo
-app = marimo.App(width="medium")
-
-@app.cell
-def _():
-    import marimo as mo
-    return (mo,)
-
-@app.cell(hide_code=True)
-def _context(mo):
-    mo.md(r"""
-    # Practical N — [Title]
-    **Context:** [1-paragraph framing from thesis]
-    """)
-    return
-
-# ... data loading, visualization, exercise cells
-```
-
-Rules:
+- First cell: markdown with `# Practical N — [Title]` and a 1-paragraph context from the thesis
+- Code cells: data loading, visualization, exercise cells
 - Each notebook must run top-to-bottom without errors
 - Use `week1/data/` datasets (download via `download_data.py`)
 - Follow Context → Script → Exercise → Reflection structure

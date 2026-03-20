@@ -54,27 +54,27 @@ installs breaking other packages.
 ## 1 — `fit-megadetector` (Practicals 1–2, data exploration)
 
 Lightweight environment for dataset exploration, downloading, and basic
-MegaDetector inference via PytorchWildlife. **Start here on Day 1.**
+MegaDetector inference via megadetector package. **Do this before Day 1.**
 
 ```bash
 conda env create -f environment-megadetector.yml
 conda activate fit-megadetector
 ```
 
-Verify:
 ```bash
 python -c "
-from PytorchWildlife.models import detection as pw_detection
+import megadetector
 print('fit-megadetector OK')
 "
 ```
+
+Verify, run the notebook practical_3_megadetector_legacy.ipynb, and check that the MegaDetector model downloads and runs:
 
 ---
 
 ## 2 — `fit-training` (Practicals 3–8, full training pipeline)
 
 Adds ultralytics (YOLOv8/v11), SAHI tiled inference, timm classifiers,
-and Segment Anything. **Install before Day 2.**
 
 ```bash
 conda env create -f environment-training.yml
@@ -162,11 +162,9 @@ helpers, and config loader importable from any notebook or script.
 Optional extras defined in `pyproject.toml`:
 
 ```bash
-pip install -e "."                 # base only (P1–P2)
-pip install -e ".[megadetector]"   # + megadetector, sahi, timm (P3–P6)
-pip install -e ".[yolo]"           # + ultralytics YOLOv8 training
-pip install -e ".[segmentation]"   # + segmentation-models-pytorch (P7)
-pip install -e ".[herdnet]"        # + tracking + segmentation (HerdNet pipeline)
+pip install -e ".[megadetector,dev]"   # fit-megadetector (P1–P2)
+pip install -e ".[training,dev]"      # fit-training (P3–P8)
+pip install -e ".[herdnet,dev]"       # fit-herdnet (HerdNet pipeline)
 ```
 
 ---
@@ -181,12 +179,11 @@ pytest tests/ -v
 
 ---
 
-## Running a Marimo notebook
+## Running a Jupyter notebook
 
 ```bash
 conda activate fit-megadetector
-marimo edit week1/practicals/p1_drone_imagery.py    # interactive editing
-marimo run  week1/practicals/p1_drone_imagery.py    # read-only app mode
+jupyter lab week1/practicals/
 ```
 
 ---

@@ -35,15 +35,10 @@ INSTALLATION_INSTRUCTIONS.md
 
 week1/
   lectures/                     ← slide decks and lecture notes
-  practicals/                   ← Marimo notebooks (one per practical block)
-    p1_visual_image_dataset.py         ← Practical 1: explore visual wildlife datasets from camera traps and aerial platforms (annotations)
-    p2_annotation_tools.py      ← Practical 2: point / box / polygon annotation demo
-    p3_megadetector.py          ← Practical 3: run MegaDetector, parse JSON output, fine tune a model
-    p4_detection_exploration.py ← Practical 4: browse detections, failure modes
-    p5_classifier.py            ← Practical 5: TIMM classifier inference on crops
-    p6_evaluation.py            ← Practical 6: accuracy check against reference set
-    p7_segmentation.py          ← Practical 7: SAM / U-Net / Segformer on land cover image
-    p8_wrapup.py                ← Practical 8: export work, reflection prompts
+  practicals/                   ← Jupyter notebooks (one per practical block)
+    practical_3_megadetector_legacy.ipynb        ← P3a: MegaDetector inference (legacy API)
+    practical_3_megadetector_ultralytics.ipynb   ← P3b: MegaDetector via ultralytics + SAHI
+    practical_5_species_classification.ipynb     ← P5: TIMM classifier inference on crops
   data/                         ← sample datasets (or download scripts)
 
 week2/
@@ -66,7 +61,7 @@ tests/                          ← pytest unit tests
 
 ## Practical Format
 
-All practicals are **Marimo notebooks** (`.py` files runnable as interactive apps).
+All practicals are **Jupyter notebooks** (`.ipynb` files).
 Each notebook follows this structure:
 
 1. **Context cell** — one-paragraph framing: what problem are we solving today?
@@ -74,8 +69,7 @@ Each notebook follows this structure:
 3. **Exercise cell** — a gap or parameter to change, with a guiding question
 4. **Reflection cell** — what worked, what failed, what would you do differently?
 
-Marimo docs: https://docs.marimo.io
-Each notebook must run top-to-bottom without errors on the shared conda environment.
+Each notebook must run top-to-bottom without errors in its designated conda environment.
 
 ---
 
@@ -97,16 +91,11 @@ Each notebook must run top-to-bottom without errors on the shared conda environm
 
 ### Week 1 Practicals
 
-| Practical | Marimo file | Key tools | Status |
-|-----------|------------|-----------|--------|
-| P1 — Dataset exploration | `week1/practicals/p1_drone_imagery.py` | `PIL`, `pandas`, `matplotlib` | done |
-| P2 — Annotation demo | `week1/practicals/p2_annotation_tools.py` | CVAT/Label Studio tour | TODO |
-| P3 — MegaDetector | `week1/practicals/p3_megadetector.py` | `PytorchWildlife` | TODO |
-| P4 — Detection exploration | `week1/practicals/p4_detection_exploration.py` | `matplotlib`, `pandas` | TODO |
-| P5 — Classifier inference | `week1/practicals/p5_classifier.py` | `timm`, `torch` | TODO |
-| P6 — Evaluation | `week1/practicals/p6_evaluation.py` | `sklearn.metrics` | TODO |
-| P7 — Segmentation | `week1/practicals/p7_segmentation.py` | `segment-anything` | TODO |
-| P8 — Wrap-up | `week1/practicals/p8_wrapup.py` | — | TODO |
+| Practical | Notebook | Env | Status |
+|-----------|----------|-----|--------|
+| P3a — MegaDetector (legacy) | `practical_3_megadetector_legacy.ipynb` | fit-megadetector | done |
+| P3b — MegaDetector (ultralytics) | `practical_3_megadetector_ultralytics.ipynb` | fit-training | done |
+| P5 — Classifier inference | `practical_5_species_classification.ipynb` | fit-training | done |
 
 ### Week 2 Materials
 

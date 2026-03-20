@@ -61,7 +61,7 @@ import megadetector
 from megadetector.detection.run_detector import load_detector
 from megadetector.detection.run_detector_batch import load_and_run_detector_batch
 import torch, numpy, pandas, matplotlib, PIL
-import wildlife_detection, marimo
+import wildlife_detection
 print('fit-megadetector: all imports OK')
 "
 ```
@@ -72,7 +72,7 @@ conda run -n fit-training python -c "
 import ultralytics, sahi, timm, segment_anything
 import torch, sklearn
 import numpy, pandas, matplotlib, PIL
-import wildlife_detection, marimo
+import wildlife_detection
 print('fit-training: all imports OK')
 "
 ```
@@ -84,7 +84,7 @@ import animaloc
 import wandb, torch
 import rasterio, geopandas
 import numpy, pandas, matplotlib, PIL
-import wildlife_detection, marimo
+import wildlife_detection
 print('fit-herdnet: all imports OK')
 "
 ```

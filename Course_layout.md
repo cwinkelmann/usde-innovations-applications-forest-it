@@ -149,7 +149,6 @@ TODO
 - Land cover mapping with Sentinel-2 + U-Net style models
 - Compare U-NET, SegFormer and SAM
 - Tree crown delineation from UAV/LiDAR
-- SAM (Segment Anything Model) — what it is and why ecologists care
 - Brief preview of Week 2 RADAR use case (Galamsey/Ghana): what they'll apply this to
 
 > **Bridge moment:** "Segmentation is the tool; next week you'll use it on a

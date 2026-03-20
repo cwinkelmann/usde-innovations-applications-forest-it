@@ -38,7 +38,6 @@ jobs:
           import torch
           import numpy, pandas, matplotlib, PIL
           import wildlife_detection
-          import marimo
           print('fit-megadetector: all imports OK')
           "
 
@@ -71,7 +70,6 @@ jobs:
           import sklearn
           import numpy, pandas, matplotlib, PIL
           import wildlife_detection
-          import marimo
           print('fit-training: all imports OK')
           "
 
@@ -101,7 +99,6 @@ jobs:
           import torch
           import numpy, pandas, matplotlib, PIL
           import wildlife_detection
-          import marimo
           print('fit-herdnet: all imports OK')
           "
 

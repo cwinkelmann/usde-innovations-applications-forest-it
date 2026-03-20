@@ -52,10 +52,10 @@ iguana HITL, iguana human-in-the-loop
 
 ## Agent Team
 
-| Agent | Role | Phase |
-|---|---|---|
-| `source_reader_agent` | Reads thesis/slides LaTeX, extracts relevant content, figures, and tables for the requested topic | Research |
-| `material_generator_agent` | Produces course material (lecture notes, Marimo notebooks, exercises, exam questions) from extracted content | Generation |
+| Agent | Role                                                                                                          | Phase |
+|---|---------------------------------------------------------------------------------------------------------------|---|
+| `source_reader_agent` | Reads thesis/slides LaTeX, extracts relevant content, figures, and tables for the requested topic             | Research |
+| `material_generator_agent` | Produces course material (lecture notes, jupyter notebooks, exercises, exam questions) from extracted content | Generation |
 
 ## Orchestration
 
@@ -80,20 +80,20 @@ User Input (e.g., "create a lecture on annotation protocols using my thesis")
     - Generate requested material type
     - Ground all claims in thesis findings
     - Reference figure paths for slide inclusion
-    - Follow FIT module conventions (Marimo format, exercise structure)
+    - Follow FIT module conventions (jupyter format, exercise structure)
     Output: Course material file(s)
 ```
 
 ## Operational Modes
 
-| Mode | Description | Agents Active |
-|---|---|---|
-| `create-lecture` | Generate lecture notes or slide outline for a topic | source_reader → material_generator |
-| `create-practical` | Generate a Marimo notebook practical grounded in thesis data | source_reader → material_generator |
-| `create-exercise` | Generate student exercises with solutions from thesis findings | source_reader → material_generator |
+| Mode | Description                                                         | Agents Active |
+|---|---------------------------------------------------------------------|---|
+| `create-lecture` | Generate lecture notes or slide outline for a topic                 | source_reader → material_generator |
+| `create-practical` | Generate a jupyter notebook practical grounded in thesis data       | source_reader → material_generator |
+| `create-exercise` | Generate student exercises with solutions from thesis findings      | source_reader → material_generator |
 | `create-exam` | Generate exam questions (multiple choice, short answer, discussion) | source_reader → material_generator |
-| `extract-figures` | List available figures for a topic with paths and descriptions | source_reader |
-| `summarize-topic` | Explain a thesis topic at teaching level (no material generation) | source_reader |
+| `extract-figures` | List available figures for a topic with paths and descriptions      | source_reader |
+| `summarize-topic` | Explain a thesis topic at teaching level (no material generation)   | source_reader |
 
 ## Case Study Knowledge Base
 
@@ -165,7 +165,7 @@ When generating material, reference these figure directories:
 
 When generating material, follow these rules (from CLAUDE.md):
 
-1. **Marimo notebooks**: All practicals are `.py` files with `marimo.App()` structure
+1. **Jupyter notebooks**: All practicals are `.ipynb` files
 2. **Cell structure**: Context → Script snippet → Exercise → Reflection
 3. **No training from scratch**: Focus on tool fluency, not backpropagation
 4. **Ground in real data**: Always reference Iguanas From Above experiments
