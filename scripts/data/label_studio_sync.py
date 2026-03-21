@@ -190,9 +190,28 @@ def load_coco_json(json_path: Path) -> dict:
 
 # ── Label Studio API helpers ───────────────────────────────────────────────────
 
-def make_session(token: str) -> requests.Session:
+def make_session(token: str, url: str = "http://localhost:8080") -> requests.Session:
+    """Create an authenticated requests session for Label Studio.
+
+    Handles both legacy API tokens (``Token <hex>``) and JWT tokens
+    (LS 1.23+). JWT refresh tokens are automatically exchanged for
+    short-lived access tokens via ``/api/token/refresh``.
+    """
     s = requests.Session()
-    s.headers.update({"Authorization": f"Token {token}"})
+
+    # JWT tokens start with "eyJ" — need special handling
+    if token.startswith("eyJ"):
+        # Try exchanging as a refresh token first
+        r = requests.post(f"{url}/api/token/refresh", json={"refresh": token})
+        if r.ok:
+            access = r.json().get("access", token)
+        else:
+            access = token
+        s.headers.update({"Authorization": f"Bearer {access}"})
+    else:
+        # Legacy hex token
+        s.headers.update({"Authorization": f"Token {token}"})
+
     return s
 
 
