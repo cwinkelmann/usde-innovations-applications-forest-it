@@ -12,3 +12,8 @@
 - [ ] Describe how to run Label Studio via Docker for annotation practical
 - [ ] Setup Jupyter Hub for remove training
 - [ ] Run the data inspection Notebook after the megadetector 
+
+- [ ] Aerial object detecion using using 
+  - [ ] YOLO
+  - [ ] HerdNet
+  - [ ] HerdNet Class Modifcation

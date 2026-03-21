@@ -32,3 +32,4 @@ Up to segmentation? using TorchGeo
 - look into AddaxAI
 - look into TorchGeo for geospatial deep learning tools
 - look into the new HuggingFace geospatial datasets and models (e.g. CanopyRS for tree crown delineation)
+- Count Varoa mites in bee hive images with YOLOv8 and SAM segmentation ( https://www.hnee.de/p/peter-neumeister)

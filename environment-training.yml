@@ -28,6 +28,7 @@ dependencies:
   # PyTorch — conda provides proper CPU/GPU builds per platform
   - pytorch
   - torchvision
+  - timm
 
   # Scientific Python (conda builds, faster solver)
   - numpy
@@ -39,3 +40,7 @@ dependencies:
 
   - pip:
       - -e ".[training,dev]"
+      # Note: animaloc is already in the training extra via pyproject.toml.
+      # It pins an old torchvision — conda's torchvision (above) takes precedence
+      # because pip won't downgrade a conda-installed package with --no-deps.
+      # If torchvision gets downgraded, fix with: pip install torchvision==0.25.0

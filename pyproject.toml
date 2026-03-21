@@ -46,15 +46,16 @@ training = [
     "segment-anything",
     "scikit-learn",
     "wget",
+    "animaloc @ git+https://github.com/cwinkelmann/HerdNet.git",
+    "wandb",
+    "torchvision>=0.20",  # pin: animaloc pulls old torchvision otherwise
 ]
 
-# fit-herdnet: HerdNet + geospatial pipeline
+# fit-herdnet: geospatial pipeline (extends training with GDAL/rasterio)
 # GDAL/rasterio must be installed via conda (not pip).
-# animaloc (HerdNet) must be installed separately:
-#   pip install git+https://github.com/cwinkelmann/HerdNet.git
+# Only needed for geospatial workflows (GeoTIFF tiling, coordinate transforms).
 herdnet = [
-    "wandb",
-    "animaloc @ git+https://github.com/cwinkelmann/HerdNet.git",
+    "wildlife-detection[training]",
 ]
 
 # ── Standalone extras ───────────────────────────────────────────────

@@ -173,25 +173,51 @@ class TestSummarize:
 
 
 NOTEBOOKS_DIR = Path(__file__).parent.parent / "week1" / "practicals"
+DATA_DIR = Path(__file__).parent.parent / "week1" / "data"
 
-# (notebook filename, conda environment) — in execution order.
-# Later notebooks may depend on outputs from earlier ones.
+# (notebook, conda env, list of expected output paths relative to DATA_DIR)
+# Notebooks are tested in order — later ones may depend on earlier outputs.
 NOTEBOOKS = [
-    ("practical_3_megadetector_legacy.ipynb", "fit-megadetector"),
-    ("practical_3_megadetector_ultralytics.ipynb", "fit-training"),
-    ("practical_5_species_classification.ipynb", "fit-training"),
+    (
+        "practical_01_visual_wildlife_datasets.ipynb",
+        "fit-megadetector",
+        [
+            "camera_trap/serengeti_subset",
+            "eikelboom",
+            "general_dataset",
+        ],
+    ),
+    (
+        "practical_3_megadetector_legacy.ipynb",
+        "fit-megadetector",
+        [],
+    ),
+    (
+        "practical_3_megadetector_ultralytics.ipynb",
+        "fit-training",
+        [],
+    ),
+    (
+        "practical_5_species_classification.ipynb",
+        "fit-training",
+        [],
+    ),
 ]
 
 
 def _execute_notebook(notebook_path: Path, conda_env: str, timeout: int = 600):
     """Execute a Jupyter notebook in a specific conda environment.
 
-    Uses `conda run -n <env>` so the notebook runs with the correct
-    dependencies without needing kernel registration.
+    Uses `conda run -n <env> jupyter execute` so the notebook runs
+    with the correct dependencies. The executed notebook (with outputs)
+    is written to a temp file to avoid modifying the source.
 
     Returns (success: bool, error_message: str).
     """
     import subprocess
+    import tempfile
+
+    out_path = Path(tempfile.mktemp(suffix=".ipynb"))
     result = subprocess.run(
         [
             "conda", "run", "-n", conda_env, "--no-capture-output",
@@ -199,7 +225,7 @@ def _execute_notebook(notebook_path: Path, conda_env: str, timeout: int = 600):
             "--to", "notebook",
             "--execute",
             f"--ExecutePreprocessor.timeout={timeout}",
-            "--output", "/dev/null",
+            "--output", str(out_path),
             str(notebook_path),
         ],
         capture_output=True,
@@ -207,6 +233,7 @@ def _execute_notebook(notebook_path: Path, conda_env: str, timeout: int = 600):
         timeout=timeout + 60,
         cwd=str(notebook_path.parent),
     )
+    out_path.unlink(missing_ok=True)
     if result.returncode != 0:
         err = result.stderr or result.stdout
         return False, err[-2000:]
@@ -226,23 +253,30 @@ def _conda_env_exists(env_name: str) -> bool:
 @pytest.mark.integration
 @pytest.mark.slow
 class TestNotebookExecution:
-    """Test that Jupyter notebooks execute top-to-bottom without errors.
+    """Test that Jupyter notebooks execute and produce expected outputs.
 
     Each notebook runs in its designated conda environment via
-    `conda run -n <env>`. Notebooks are tested in order because
-    later practicals may depend on outputs from earlier ones.
+    `conda run -n <env>`. After execution, expected output paths
+    are checked to verify the notebook actually did its work.
     """
 
     @pytest.mark.parametrize(
-        "notebook, conda_env",
+        "notebook, conda_env, expected_outputs",
         NOTEBOOKS,
-        ids=[Path(n).stem for n, _ in NOTEBOOKS],
+        ids=[Path(n).stem for n, _, _ in NOTEBOOKS],
     )
-    def test_notebook_runs(self, notebook, conda_env):
+    def test_notebook_runs(self, notebook, conda_env, expected_outputs):
         nb_path = NOTEBOOKS_DIR / notebook
         if not nb_path.exists():
             pytest.skip(f"{notebook} not yet created")
         if not _conda_env_exists(conda_env):
             pytest.skip(f"conda env '{conda_env}' not installed")
+
         success, error = _execute_notebook(nb_path, conda_env)
         assert success, f"{notebook} failed in {conda_env}:\n{error}"
+
+        for rel_path in expected_outputs:
+            out = DATA_DIR / rel_path
+            assert out.exists(), (
+                f"{notebook} ran but expected output missing: {out}"
+            )
