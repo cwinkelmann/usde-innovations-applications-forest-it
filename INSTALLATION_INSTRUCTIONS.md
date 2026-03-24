@@ -68,6 +68,11 @@ print('fit-megadetector OK')
 "
 ```
 
+Run the notebook
+```
+jupyter lab 
+```
+
 Verify, run the notebook practical_3_megadetector_legacy.ipynb, and check that the MegaDetector model downloads and runs:
 
 ---

@@ -121,18 +121,19 @@ def download_herdnet_weights(output_dir: Path = _DEFAULT_DIR) -> Path:
 
 
 def download_serengeti(
-    n_images: int = 50,
+    n_images: int = 100,
     output_dir: Path = _DEFAULT_DIR,
 ) -> Path:
     """Snapshot Serengeti subset from LILA / Azure Blob Storage.
 
-    Uses Season 1 metadata only (~18 MB). Prefers images that contain
-    at least one animal annotation.
+    Uses Season 1 metadata only (~18 MB). Downloads a balanced mix of
+    images with animals and empty images (roughly 50/50 by default).
 
     Parameters
     ----------
     n_images : int
-        Number of images to download.
+        Total number of images to download. Half will contain animals,
+        half will be empty.
     output_dir : Path
         Parent directory. Images go into ``output_dir / camera_trap / serengeti_subset``.
 
@@ -140,7 +141,19 @@ def download_serengeti(
     -------
     Path to the image directory.
     """
+    import random
+
     out_dir = output_dir / "camera_trap" / "serengeti_subset"
+    meta_path = output_dir / "camera_trap" / "serengeti_meta.json"
+
+    # Skip if already downloaded
+    if out_dir.exists() and meta_path.exists():
+        existing = [p for p in out_dir.iterdir()
+                    if p.suffix.lower() in {".jpg", ".jpeg", ".png"}]
+        if len(existing) >= n_images // 2:
+            print(f"Serengeti already downloaded ({len(existing)} images in {out_dir})")
+            return out_dir
+
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"\n=== Snapshot Serengeti (n={n_images}) ===")
 
@@ -157,44 +170,39 @@ def download_serengeti(
 
     print(f"  {len(meta['images'])} images in Season 1 metadata")
 
-    # Prefer images that have at least one animal annotation (not empty)
-    animal_cat_ids = {
-        c["id"] for c in meta["categories"] if c["name"].lower() != "empty"
-    }
-    images_with_animals = {
-        a["image_id"] for a in meta["annotations"]
-        if a.get("category_id") in animal_cat_ids
-    }
-    animal_images = [img for img in meta["images"] if img["id"] in images_with_animals]
-    sampled = animal_images[:n_images]
-    if len(sampled) < n_images:
-        sampled = meta["images"][:n_images]  # fallback
-    print(f"  Sampled {len(sampled)} images ({len(images_with_animals)} with animals available)")
+    # Split images into occupied (animal) and empty
+    empty_cat_id = next(
+        (c["id"] for c in meta["categories"] if c["name"].lower() == "empty"), None
+    )
+    img_to_cats = {}
+    for a in meta["annotations"]:
+        img_to_cats.setdefault(a["image_id"], set()).add(a.get("category_id"))
+
+    all_occupied = [img for img in meta["images"]
+                    if img["id"] in img_to_cats
+                    and img_to_cats[img["id"]] != {empty_cat_id}]
+    all_empty = [img for img in meta["images"]
+                 if img["id"] not in img_to_cats
+                 or img_to_cats[img["id"]] == {empty_cat_id}]
+
+    # Sample balanced: half occupied, half empty
+    n_occupied = n_images // 2
+    n_empty = n_images - n_occupied
+
+    random.seed(42)
+    random.shuffle(all_occupied)
+    random.shuffle(all_empty)
+
+    sampled_occupied = all_occupied[:n_occupied]
+    sampled_empty = all_empty[:n_empty]
+    sampled = sampled_occupied + sampled_empty
+
+    print(f"  Sampled {len(sampled_occupied)} occupied + {len(sampled_empty)} empty "
+          f"= {len(sampled)} images")
+    print(f"  ({len(all_occupied)} occupied and {len(all_empty)} empty available)")
 
     sampled_ids = {img["id"] for img in sampled}
     sampled_annotations = [a for a in meta["annotations"] if a["image_id"] in sampled_ids]
-
-    # ── Download bounding box annotations (separate file on LILA) ─────────
-    BBOX_URL = (
-        "https://lila.science/public"
-        "/snapshot-serengeti-bounding-boxes-20190903.json.zip"
-    )
-    print("  Downloading bounding box annotations...")
-    try:
-        r_bbox = requests.get(BBOX_URL, timeout=120)
-        r_bbox.raise_for_status()
-        with zipfile.ZipFile(io.BytesIO(r_bbox.content)) as z:
-            with z.open(z.namelist()[0]) as f:
-                bbox_meta = json.load(f)
-        # Merge bbox annotations for our sampled images
-        bbox_anns = [a for a in bbox_meta.get("annotations", [])
-                     if a["image_id"] in sampled_ids and "bbox" in a]
-        # Add bboxes to the sampled annotations list
-        sampled_annotations.extend(bbox_anns)
-        n_with_bbox = len({a["image_id"] for a in bbox_anns})
-        print(f"  {len(bbox_anns)} bounding boxes for {n_with_bbox}/{len(sampled)} images")
-    except Exception as e:
-        print(f"  WARNING: bbox download failed ({e}), continuing with species labels only")
 
     meta_path = output_dir / "camera_trap" / "serengeti_meta.json"
     with open(meta_path, "w") as f:
@@ -565,13 +573,22 @@ def _load_caltech_labels(output_dir: Path):
 
 
 def _load_herdnet_csv(output_dir: Path):
-    """Load HerdNet General Dataset CSV, return (df, tile_dir) or (None, None)."""
+    """Load HerdNet General Dataset CSV, return (df, tile_dir) or (None, None).
+
+    Picks the first CSV whose image directory actually has files on disk.
+    """
     import pandas as pd
-    csv = output_dir / "general_dataset" / "test_sample.csv"
-    img_dir = output_dir / "general_dataset" / "test_sample"
-    if not csv.exists():
-        return None, img_dir
-    return pd.read_csv(csv), img_dir
+    gd = output_dir / "general_dataset"
+    for csv_name, img_subdir in [
+        ("train.csv", "train"),
+        ("test.csv", "test"),
+        ("test_sample.csv", "test_sample"),
+    ]:
+        csv = gd / csv_name
+        img_dir = gd / img_subdir
+        if csv.exists() and img_dir.exists() and any(img_dir.iterdir()):
+            return pd.read_csv(csv), img_dir
+    return None, gd
 
 
 def _parse_yolo_labels(label_dir: Path) -> dict[str, int]:
@@ -766,12 +783,12 @@ def show_class_distribution(
         counts = cdf["true_label"].value_counts()
         title = "Caltech Camera Traps — species distribution"
     elif dataset == "eikelboom":
-        yolo = _parse_yolo_labels(output_dir / "eikelboom" / "train")
-        if not yolo:
-            print("No Eikelboom YOLO labels found"); return
-        counts = pd.Series(yolo).sort_values(ascending=False)
-        counts.index = [f"class {c}" for c in counts.index]
-        title = "Eikelboom — bounding boxes per class"
+        ann_csv = output_dir / "eikelboom" / "annotations" / "annotations_images.csv"
+        if not ann_csv.exists():
+            print("Eikelboom annotations not found"); return
+        ann_df = pd.read_csv(ann_csv)
+        counts = ann_df["SPECIES"].value_counts()
+        title = "Eikelboom — annotations per species"
     elif dataset == "mmla_wilds":
         # Try train/labels first, then labels/ at root
         labels_dir = output_dir / "mmla_wilds" / "train" / "labels"
@@ -902,43 +919,53 @@ def show_bboxes(
         plt.tight_layout()
 
     elif dataset == "eikelboom":
-        train_dir = output_dir / "eikelboom" / "train"
-        images = _list_images(train_dir)[:n]
-        if not images:
-            print("No Eikelboom train images found"); return
+        import pandas as pd
 
-        ncols = min(len(images), 3)
-        nrows = (len(images) + ncols - 1) // ncols
-        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 4))
-        axes_flat = np.array(axes).flatten() if len(images) > 1 else [axes]
+        eik_dir = output_dir / "eikelboom"
+        ann_csv = eik_dir / "annotations" / "annotations_images.csv"
+        if not ann_csv.exists():
+            print(f"Eikelboom annotations not found: {ann_csv}"); return
 
-        for i, img_path in enumerate(images):
+        ann_df = pd.read_csv(ann_csv)  # FILE, x1, y1, x2, y2, SPECIES
+        # Pick images that have annotations and exist on disk
+        files_with_ann = ann_df["FILE"].unique()
+        shown_files = []
+        for fname in files_with_ann:
+            for split in ["train", "test", "val"]:
+                p = eik_dir / split / fname
+                if p.exists():
+                    shown_files.append((p, fname))
+                    break
+            if len(shown_files) >= n:
+                break
+
+        if not shown_files:
+            print("No Eikelboom images with annotations found"); return
+
+        ncols = min(len(shown_files), 3)
+        nrows = (len(shown_files) + ncols - 1) // ncols
+        fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 5, nrows * 5))
+        axes_flat = np.array(axes).flatten() if len(shown_files) > 1 else [axes]
+
+        for i, (img_path, fname) in enumerate(shown_files):
             ax = axes_flat[i]
-            img = PILImage.open(img_path)
-            img_arr = np.array(img)
-            ax.imshow(img_arr)
-            h, w = img_arr.shape[:2]
-
-            # Draw YOLO boxes if label file exists
-            label_path = img_path.with_suffix(".txt")
-            if label_path.exists():
-                for line in label_path.read_text().strip().splitlines():
-                    parts = line.strip().split()
-                    if len(parts) >= 5:
-                        cx, cy, bw, bh = (float(x) for x in parts[1:5])
-                        x0 = (cx - bw / 2) * w
-                        y0 = (cy - bh / 2) * h
-                        rect = patches.Rectangle(
-                            (x0, y0), bw * w, bh * h,
-                            linewidth=2, edgecolor="lime", facecolor="none",
-                        )
-                        ax.add_patch(rect)
-            ax.set_title(img_path.name, fontsize=8)
+            ax.imshow(np.array(PILImage.open(img_path)))
+            file_anns = ann_df[ann_df["FILE"] == fname]
+            for _, row in file_anns.iterrows():
+                x1, y1, x2, y2 = row["x1"], row["y1"], row["x2"], row["y2"]
+                rect = patches.Rectangle(
+                    (x1, y1), x2 - x1, y2 - y1,
+                    linewidth=2, edgecolor="lime", facecolor="none",
+                )
+                ax.add_patch(rect)
+                ax.text(x1, y1 - 2, row["SPECIES"], fontsize=6,
+                        color="lime", backgroundcolor="black")
+            ax.set_title(f"{fname} ({len(file_anns)} boxes)", fontsize=8)
             ax.axis("off")
 
-        for ax in axes_flat[len(images):]:
+        for ax in axes_flat[len(shown_files):]:
             ax.axis("off")
-        plt.suptitle("Eikelboom — aerial tiles with YOLO bounding boxes", fontsize=11)
+        plt.suptitle("Eikelboom — aerial images with Pascal VOC bounding boxes", fontsize=11)
         plt.tight_layout()
     else:
         raise ValueError(f"show_bboxes supports 'caltech' or 'eikelboom', got {dataset!r}")
