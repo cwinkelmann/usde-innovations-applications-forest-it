@@ -21,4 +21,11 @@
   - [ ] HerdNet
   - [ ] HerdNet Class Number Modification
 
+## Segmentation
+
+
 ## Introduction to my work of tiny object detection in aerial images in the Iguanas from Above Project
+
+
+### Short presentation
+- [ ] short slide deck to show the results of the tiny object detection in aerial images in the Iguanas from Above Project, and to introduce the problem of tiny object detection in aerial images more generally.

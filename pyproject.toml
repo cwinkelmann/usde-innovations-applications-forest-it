@@ -8,10 +8,12 @@ version = "0.1.0"
 description = "Aerial wildlife detection pipeline for visual images"
 requires-python = ">=3.10"
 
-# Base dependencies — packages that coexist without conflicts.
-# PyTorch must be installed via conda BEFORE `pip install -e "."`,
-# or is pre-installed in Google Colab.
+# Base dependencies — all environments need these.
+# PyTorch from pip is CPU-only. For GPU/MPS acceleration,
+# conda install pytorch torchvision -c pytorch  (before pip install)
 dependencies = [
+    "torch",
+    "torchvision",
     "numpy",
     "pillow",
     "pandas",
@@ -46,9 +48,9 @@ training = [
     "segment-anything",
     "scikit-learn",
     "wget",
-    "animaloc @ git+https://github.com/cwinkelmann/HerdNet.git",
+    "tqdm",
     "wandb",
-    "torchvision>=0.20",  # pin: animaloc pulls old torchvision otherwise
+    "speciesnet",
 ]
 
 # fit-herdnet: geospatial pipeline (extends training with GDAL/rasterio)
@@ -56,6 +58,7 @@ training = [
 # Only needed for geospatial workflows (GeoTIFF tiling, coordinate transforms).
 herdnet = [
     "wildlife-detection[training]",
+    "animaloc @ git+https://github.com/cwinkelmann/HerdNet.git",
 ]
 
 # ── Standalone extras ───────────────────────────────────────────────

@@ -1,16 +1,14 @@
 # fit-training — Full training & inference pipeline (Practicals 3–8)
 #
-# Covers: P3 (YOLOv8 + SAHI), P4 (detection exploration), P5 (timm classifier),
-#         P6 (evaluation), P7 (SAM segmentation), P8 (wrap-up)
-# Does NOT include: megadetector (see environment-megadetector.yml)
-#                   GDAL/rasterio (see environment-herdnet.yml)
+# Covers: P3 (YOLOv8 + SAHI), P5 (species classifier), P6 (HerdNet),
+#         P7 (segmentation), P8 (wrap-up)
 #
 # Install:
 #   conda env create -f environment-training.yml
 #   conda activate fit-training
 #
-# Colab (no conda needed):
-#   !pip install ".[training,dev]"
+# Update:
+#   conda env update -f environment-training.yml --prune
 #
 # Verify:
 #   python -c "import ultralytics, sahi, timm; print('fit-training OK')"
@@ -18,29 +16,11 @@
 name: fit-training
 
 channels:
-  - pytorch
   - conda-forge
 
 dependencies:
   - python=3.11
   - pip
 
-  # PyTorch — conda provides proper CPU/GPU builds per platform
-  - pytorch
-  - torchvision
-  - timm
-
-  # Scientific Python (conda builds, faster solver)
-  - numpy
-  - pandas
-  - scipy
-  - matplotlib
-  - pillow
-  - scikit-learn
-
   - pip:
       - -e ".[training,dev]"
-      # Note: animaloc is already in the training extra via pyproject.toml.
-      # It pins an old torchvision — conda's torchvision (above) takes precedence
-      # because pip won't downgrade a conda-installed package with --no-deps.
-      # If torchvision gets downgraded, fix with: pip install torchvision==0.25.0

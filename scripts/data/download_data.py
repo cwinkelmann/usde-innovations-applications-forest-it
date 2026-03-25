@@ -991,8 +991,16 @@ def show_annotated_tiles(
     if df is None:
         print("General Dataset CSV not found"); return
 
+    # Only keep annotations for images that exist on disk
+    existing = {p.name for p in img_dir.iterdir()
+                if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"}} \
+               if img_dir.exists() else set()
+    df = df[df["images"].isin(existing)]
+    if df.empty:
+        print(f"No matching images on disk in {img_dir}"); return
+
     per_tile = df.groupby("images").size()
-    print(f"Tiles: {len(_list_images(img_dir))}  |  "
+    print(f"Tiles on disk: {len(existing)}  |  "
           f"Annotations: {len(df)}  |  "
           f"Annotated tiles: {df['images'].nunique()}  |  "
           f"Median per tile: {per_tile.median():.0f}  |  "

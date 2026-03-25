@@ -1,14 +1,13 @@
 # fit-megadetector — Lightweight environment for data exploration + MegaDetector inference
 #
-# Covers: P1 (datasets), P2 (annotation), basic MegaDetector inference
-# Does NOT include: ultralytics training, SAHI, timm (see environment-training.yml)
+# Covers: P1 (datasets), P3 (MegaDetector), P4 (Label Studio)
 #
 # Install:
 #   conda env create -f environment-megadetector.yml
 #   conda activate fit-megadetector
 #
-# Colab (no conda needed):
-#   !pip install ".[megadetector,dev]"
+# Update:
+#   conda env update -f environment-megadetector.yml --prune
 #
 # Verify:
 #   python -c "import megadetector; print('fit-megadetector OK')"
@@ -16,7 +15,6 @@
 name: fit-megadetector
 
 channels:
-  - pytorch
   - conda-forge
 
 dependencies:
@@ -25,4 +23,3 @@ dependencies:
 
   - pip:
       - -e ".[megadetector,dev]"
-      - ultralytics
