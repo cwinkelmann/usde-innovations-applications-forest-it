@@ -26,7 +26,8 @@ By the end of the course you will be able to:
 - Know how to train a model like YOLO on a custom dataset, and how to use tools like SAHI for large image inference
 
 The course is deliberately **not** that much about Deep Learning topics like backpropagation, loss functions, or training
-from scratch. The goal is tool fluency and conceptual literacy — understanding what
+from scratch. If you are curious about that check out this bootcamp: [practical-computer-vision](https://github.com/andandandand/practical-computer-vision)
+The goal is tool fluency and conceptual literacy — understanding what
 these models do, how to run them, and how to evaluate their outputs for real ecological
 applications.
 
@@ -38,6 +39,8 @@ In order to get started quickly please come prepared with some preparations made
 
 * setup up your python environment like you did in the previous semesters. Conda is preferred, in order to get GDAL and other tools working. 
 * Use an IDE like [PyCharm Pro](https://www.jetbrains.com/pycharm/download/) 
+* Download this repository
+  * ideally via cloning it with git, but you can also download the ZIP and extract it
 * Install the three conda conda environments described en detail in the [Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)
    * conda env create -f environment-megadetector.yml
    * conda env create -f environment-training.yml
@@ -77,7 +80,7 @@ TODO - review if these match
 |-----|----------|-------------|-------|
 | P0  | [practical_0_megadetector_legacy.ipynb](week1/practicals/practical_0_megadetector_legacy.ipynb) | Run MegaDetector v5 on camera trap images, extract crops, compare with v1000 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_0_megadetector_legacy.ipynb) |
 | P1  | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap and aerial datasets with four annotation types | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
-| P3b | [practical_3_megadetector_ultralytics.ipynb](week1/practicals/practical_3_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via ultralytics with SAHI tiled inference | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_3_megadetector_ultralytics.ipynb) |
+| P3b | [practical_3_megadetector_ultralytics.ipynb](week1/practicals/practical_02_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via ultralytics with SAHI tiled inference | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_3_megadetector_ultralytics.ipynb) |
 | P4  | [practical_04_annotation_tools.ipynb](week1/practicals/practical_04_annotation_tools.ipynb) | Upload images to Label Studio with MegaDetector pre-annotations | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_04_annotation_tools.ipynb) |
 | P5  | [practical_5_species_classification.ipynb](week1/practicals/practical_5_species_classification.ipynb) | Classify animal crops with SpeciesNet and DeepFaune, evaluate with confusion matrix | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_5_species_classification.ipynb) |
 | P6  | [practical_06_aeirial_object_detection-herdnet.ipynb](week1/practicals/practical_06_aerial_object_detection-herdnet.ipynb) | Run HerdNet point-based detection on aerial wildlife imagery | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) |
