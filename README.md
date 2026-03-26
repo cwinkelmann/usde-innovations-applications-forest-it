@@ -72,16 +72,16 @@ work through the complete pipeline:
 
 ### Week 1 Practicals
 
-| # | Notebook | Description | Colab |
-|---|----------|-------------|-------|
-| P1 | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap and aerial datasets with four annotation types | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
-| P3a | [practical_0_megadetector_legacy.ipynb](week1/practicals/practical_0_megadetector_legacy.ipynb) | Run MegaDetector v5 on camera trap images, extract crops, compare with v1000 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_0_megadetector_legacy.ipynb) |
+| #   | Notebook | Description | Colab |
+|-----|----------|-------------|-------|
+| P0  | [practical_0_megadetector_legacy.ipynb](week1/practicals/practical_0_megadetector_legacy.ipynb) | Run MegaDetector v5 on camera trap images, extract crops, compare with v1000 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_0_megadetector_legacy.ipynb) |
+| P1  | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap and aerial datasets with four annotation types | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
 | P3b | [practical_3_megadetector_ultralytics.ipynb](week1/practicals/practical_3_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via ultralytics with SAHI tiled inference | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_3_megadetector_ultralytics.ipynb) |
-| P4 | [practical_04_annotation_tools.ipynb](week1/practicals/practical_04_annotation_tools.ipynb) | Upload images to Label Studio with MegaDetector pre-annotations | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_04_annotation_tools.ipynb) |
-| P5 | [practical_5_species_classification.ipynb](week1/practicals/practical_5_species_classification.ipynb) | Classify animal crops with SpeciesNet and DeepFaune, evaluate with confusion matrix | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_5_species_classification.ipynb) |
-| P6 | [practical_06_aeirial_object_detection-herdnet.ipynb](week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) | Run HerdNet point-based detection on aerial wildlife imagery | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) |
-| P7 | [practical_07_segmentation.ipynb](week1/practicals/practical_07_segmentation.ipynb) | Train a U-Net on a drone tile with a hand-drawn mask | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_07_segmentation.ipynb) |
-| P8 | [practical_08_wrapup.ipynb](week1/practicals/practical_08_wrapup.ipynb) | Export results, structured reflection, Week 2 preview | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_08_wrapup.ipynb) |
+| P4  | [practical_04_annotation_tools.ipynb](week1/practicals/practical_04_annotation_tools.ipynb) | Upload images to Label Studio with MegaDetector pre-annotations | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_04_annotation_tools.ipynb) |
+| P5  | [practical_5_species_classification.ipynb](week1/practicals/practical_5_species_classification.ipynb) | Classify animal crops with SpeciesNet and DeepFaune, evaluate with confusion matrix | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_5_species_classification.ipynb) |
+| P6  | [practical_06_aeirial_object_detection-herdnet.ipynb](week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) | Run HerdNet point-based detection on aerial wildlife imagery | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) |
+| P7  | [practical_07_segmentation.ipynb](week1/practicals/practical_07_segmentation.ipynb) | Train a U-Net on a drone tile with a hand-drawn mask | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_07_segmentation.ipynb) |
+| P8  | [practical_08_wrapup.ipynb](week1/practicals/practical_08_wrapup.ipynb) | Export results, structured reflection, Week 2 preview | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_08_wrapup.ipynb) |
 
 ### Week 2 Practicals
 
@@ -194,7 +194,7 @@ Lecture
 ### 13:15–16:00 | Data & Preprocessing Practicals
 
 **Setup**
-- Run the initial Notebook
+- Run the initial Notebook: [Intro](week1/practicals/practical_0_megadetector_legacy.ipynb)
 - Download some datasets
 - Install/use pre-configured environment
 - Run MegaDetector on provided camera trap images
@@ -286,9 +286,6 @@ TODO: prepare some things people might want to do on their own
 
 **Segmentation in Ecology & Remote Sensing (50 min)**
 - Land cover mapping with Sentinel-2 + U-Net style models
-- Compare U-NET, SegFormer and SAM
-- Tree crown delineation from UAV/LiDAR
-- Brief preview of Week 2 RADAR use case (Galamsey/Ghana): what they'll apply this to
 
 > **Bridge moment:** "Segmentation is the tool; next week you'll use it on a
 > real deforestation detection problem"
@@ -304,7 +301,7 @@ TODO: prepare some things people might want to do on their own
 ---
 
 ### 13:15–16:00 | Segmentation Practicals + Wrap-up
-
+TODO: practical_07_segmentation.ipynb
 
 **Practical 7 — Intro to semantic segmentation**
 - Run a pre-trained segmentation model (e.g. SAM or a simple U-Net)
@@ -561,6 +558,8 @@ These are the building blocks that specialist wildlife models extend:
 - Transformer-based end-to-end detector
 - No anchor boxes; slower to train but promising
 
+
+
 ---
 
 ## Camera Trap Pipelines
@@ -601,68 +600,25 @@ YOLOv5x → YOLOv8s for fast inference. Classification head based on DINOv2 feat
 
 ---
 
-### Camera Trap Management Tools
-
-From ICTC 2026 workshops:
-
-| Tool | Notes |
-|---|---|
-| **Agouti** | European camera trap management platform |
-| **Wildlife Insights** | Google-backed; uses SpeciesNet; global scale |
-| **Trapper** | Open-source; CamtrapDP data standard; `gitlab.com/trapper-project/trapper-setup` |
-| **TrapTagger** | WildEye Conservation; includes human-in-the-loop verification |
-| **Addax-AI** | Started as Megadetector frontend; evolved into a model zoo |
-| **Animl-R** | R-based pipeline; can also train models: `github.com/conservationtechlab/animl-r` |
-| **Zamba / ZambaCloud** | Custom model training with less labelling via stratified sampling |
-| **Bisque2** | Can do annotation too |
-
-**Agent Morris Camera Trap ML Survey** — comprehensive list of tools:
-https://agentmorris.github.io/camera-trap-ml-survey/
-
----
-
-## Aerial-Specific Detection Models
-
-### HerdNet with DLA Backbone
+### No-Code and Less Code Wildlife Detection Tools
 
 
-Point-based object detector developed for dense herds in aerial imagery (Delplanque et al., 2023).
-Uses **Focal Inverse Distance Transform (FIDT)** density maps instead of Gaussian kernels.
 
-**Why FIDT over Gaussian density maps:**
-- Gaussian kernels merge in crowded colonies → incorrect counts in dense aggregations
-- FIDT maintains a distinct peak per individual → proximity-invariant precision
-
-**Architecture:**
-- Backbone: Deep Layer Aggregation (DLA-34 through DLA-169)
-- IDA (Iterative Deep Aggregation) progressively re-aggregates shallow features across multiple stages
-- Outperforms UNet-style skip connections for small object detection
-
-**Installation & usage:**
-```bash
-# TODO: add HerdNet installation steps and inference example
-```
-
-**Training tips from iguana detection experiments:**
-- Augmentation strategy is dataset-specific — do not copy settings across sites
-- Hyperparameter sweeps via Weights & Biases recommended
-- Use tiled inference for full orthomosaics (GeoTIFF support)
+| Tool                                                                                                                                         | Notes                                                                         |
+|----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [**Agouti**](https://agouti.eu/)                                                                                                             | European camera trap management platform                                      |
+| [**Wildlife Insights**](https://www.wildlifeinsights.org/)                                                                                   | Google-backed; uses SpeciesNet; global scale                                  |
+| [**Trapper**](gitlab.com/trapper-project/trapper-setup)                                                                                      | Open-source; CamtrapDP data standard;                                         |
+| [**Addax-AI**](https://addaxdatascience.com/addaxai/)                                                                                        | Started as Megadetector frontend; evolved into a model zoo                    |
+| [**Animl-R**](github.com/conservationtechlab/animl-r)                                                                                        | R-based pipeline; can also train models                                       |
+| [**animl-py**](https://github.com/conservationtechlab/animl-py)                                                                              | Wrapper for detection and classification:                                     |
+| [**Zamba / ZambaCloud**](https://www.zambacloud.com/)                                                                                        | No-Code Custom model training with less labelling via stratified sampling     |
+| [**Bisque2**](https://bisque2.ece.ucsb.edu/client_service/view?resource=https://bisque2.ece.ucsb.edu/data_service/00-cXbwjYe7z7VUm3bVfDGgmS) | Can do annotation too                                                         |
+| [**Dan Morris Camera Trap ML Survey**](https://agentmorris.github.io/camera-trap-ml-survey/)                                                                                                     | comprehensive list of tools collected by on of the initiators of megadetector |
 
 ---
 
 
-## Density Maps & Counting as Regression
-
-Replacing the classification head with a regression head gives a direct count output.
-
-- **Gaussian density maps**: convolve point annotations with a Gaussian kernel → sum = count
-- **FIDT**: focal inverse distance transform — maintains per-individual peaks in dense scenes
-- **CSRNet / DM-Count**: crowd-counting architectures applicable to wildlife
-
-**Why counting as regression is useful:**
-- Reduces annotation effort (points rather than bounding boxes)
-- Handles severe occlusion and overlap in dense colonies
-- Naturally handles "blobs" of animals in aerial perspective
 
 
 ## Experiment Tracking & Reproducibility
@@ -717,7 +673,8 @@ HerdNet with DLA-34 backbone, FIDT density maps.
 - TODO inspect optuna for hyperparameter search.
 - TODO: look into iwildcam data, is could the prevalence of species be tied to landsat 8 images? like is the densitiy tied to some spectra? - https://github.com/visipedia/iwildcam_comp
 - TODO Varoa Mite detection in honeybee hives using AI
-
+- TODO: https://github.com/bambi-eco/Bambi-QGIS / https://github.com/bambi-eco/Dataset 
+- Find an interesting dataset on roboflow or kaggle, run a YOLOv8 baseline, and do a hyperparameter sweep to improve it
 ---
 
 
