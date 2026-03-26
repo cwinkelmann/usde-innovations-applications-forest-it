@@ -1,30 +1,28 @@
 # Aerial Wildlife Detection — Course Overview
 Course Materials for the Innovations and Applications of Forest IT (FIT) Module, HNEE
 
-> A practical course on automated wildlife monitoring using drone imagery, camera traps,
-> and deep learning.
+A practical course on automated wildlife monitoring using drone imagery, camera traps, and deep learning.
 
 ---
 
 ## TL;DR
 
-Wildlife ecologists are drowning in data. A single drone survey can produce tens of
-thousands of images; a camera trap network generates millions per year. Manual review
-is too slow, too expensive, and too inconsistent to scale.
+Wildlife ecologists are drowning in data. A camera trap network generates millions of images per year.
+A single drone survey can produce tens of thousands of images. 
+Manual review is too slow, too expensive, and too inconsistent to scale.
 
 This course is about closing that gap with AI — not by building models from scratch,
 but by learning to use, evaluate, and critically apply the tools that already exist.
 
 By the end of the course you will be able to:
 
-- Run **MegaDetector** on camera trap images, interpret its confidence scores, and
+- Run find if an image contains an animal, person or vehicle on camera trap images
+- interpret **MegaDetector** confidence scores, and
   extract animal crops for downstream classification
-- Apply a **pre-trained image classifier** (SpeciesNet / DeepFaune) to identify species
-  from crops, and evaluate its performance honestly
+- Apply a **pre-trained image classifier** to identify species of animals
+  from images, and evaluate its performance honestly
 - Understand how **point-based detectors** like HerdNet count animals in dense aerial
   imagery
-- Have an idea when to trust a model's output — and when not to — including the common pitfalls
-  of spatial data leakage and overconfident predictions
 - Know how to train a model like YOLO on a custom dataset, and how to use tools like SAHI for large image inference
 
 The course is deliberately **not** that much about Deep Learning topics like backpropagation, loss functions, or training
@@ -39,11 +37,14 @@ In order to get started quickly please come prepared with some preparations made
 ### Software environment: 
 
 * setup up your python environment like you did in the previous semesters. Conda is preferred, in order to get GDAL and other tools working. 
-* Install the three conda conda environments **[Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)**
 * Use an IDE like [PyCharm Pro](https://www.jetbrains.com/pycharm/download/) 
-
-* to get access to Datasets and Models, get yourself an account for huggingface: https://huggingface.co/
-* to track the performance of trained models get yourself an account for https://wandb.ai/
+* Install the three conda conda environments described en detail in the [Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)
+   * conda env create -f environment-megadetector.yml
+   * conda env create -f environment-training.yml
+   * conda env create -f environment-herdnet.yml
+* Run your a first notebook and see if it works using the megadetector environment: practical_0_megadetector_legacy.ipynb
+* (optional) to get access to Datasets and Models, get yourself an account for huggingface: https://huggingface.co/
+* (optional) to track the performance of trained models get yourself an account for https://wandb.ai/
 
 ---
 
@@ -71,7 +72,7 @@ work through the complete pipeline:
 - Introduction to segmentation — the bridge into Week 2
 
 ### Week 1 Practicals
-
+TODO - review if these match
 | #   | Notebook | Description | Colab |
 |-----|----------|-------------|-------|
 | P0  | [practical_0_megadetector_legacy.ipynb](week1/practicals/practical_0_megadetector_legacy.ipynb) | Run MegaDetector v5 on camera trap images, extract crops, compare with v1000 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_0_megadetector_legacy.ipynb) |
@@ -84,7 +85,7 @@ work through the complete pipeline:
 | P8  | [practical_08_wrapup.ipynb](week1/practicals/practical_08_wrapup.ipynb) | Export results, structured reflection, Week 2 preview | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_08_wrapup.ipynb) |
 
 ### Week 2 Practicals
-
+TODO - not done yet
 | # | Notebook | Description | Colab |
 |---|----------|-------------|-------|
 | W2 | [practical_geospatial_segmentation.ipynb](week2/practicals/practical_geospatial_segmentation.ipynb) | Pixel classification on georeferenced rasters with QGIS training points | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week2/practicals/practical_geospatial_segmentation.ipynb) |
@@ -105,85 +106,9 @@ week2/
   data/
 ```
 
----
-
-## Learning Objectives
-
-By the end of the module, students will be able to:
-
-1. Explain how AI tools are applied across the ecology monitoring pipeline
-2. Run MegaDetector on camera trap imagery and interpret its outputs
-3. Apply a pre-trained image classifier to wildlife crops
-4. Understand segmentation conceptually and run a basic SAM demo
-5. Work with SAR imagery for land cover change detection
-6. Critically assess where AI helps — and where it fails — in field ecology
 
 ---
 
-## Practical Environment
-
-All practicals run in Python. Follow the **[Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)** to set up your environment before Day 1. The course uses two conda environments to avoid dependency conflicts — the installation guide explains which environment to use for each practical.
-
-Key packages used across the module:
-
-| Package | Purpose |
-|---------|---------|
-| `megadetector` | Camera trap animal detection |
-| `timm` + `torch` | Pre-trained classification models |
-| `segment-anything` | SAM segmentation demos |
-| `rasterio` / `GDAL` | Geospatial raster data handling |
-| `matplotlib` / `folium` | Visualisation |
-
-A QGIS installation is recommended but not required.
-
----
-
-## Deliberate Scope
-
-This is **not** a deep learning theory course. We do not cover low level machine learning like:
-
-- Backpropagation or training from scratch
-- Loss functions, optimisers, or hyperparameter tuning
-- Transformer architecture internals
-- GPU cluster workflows
-
-The goal is **tool fluency and conceptual literacy** — understanding what these
-models do, how to run them, and how to evaluate their outputs for real ecological
-applications.
-
----
-
-## Contributing & Contact
-
-This repository is actively developed alongside the course. If you are a student
-and find an error or want to suggest an improvement, open an issue or contact the
-teaching team directly.
-
-**J.-P. Mund** — module lead
-**C. Winkelmann** — practical sessions (Week 1)
-**N. Voss & A. Bosu** — radar remote sensing (Week 2)
-
-
-## Course Structure
-
-# Week 1 — AI & UAV Wildlife Image Classification
-**Module:** FIT — Innovations and Applications of Forest IT
-**Dates:** March 30 – April 2, 2026
-**Teaching team:** J.-P. Mund & C. Winkelmann
-
----
-
-## Learning Objectives
-
-By the end of Week 1, students can:
-- Explain why and how AI is applied in wildlife ecology and forest monitoring
-- Describe the camera trap workflow and how MegaDetector accelerates it
-- Distinguish between detection, classification, and segmentation tasks
-- Apply a pre-trained classification model to a small wildlife dataset
-- Train a bounding box detection model like YOLO, train a Classification Model like ResNet or a point based detection (e.g. HerdNet) on a custom dataset
-- Understand segmentation conceptually and why it matters for remote sensing tasks
-
----
 
 ## Day 1 — Monday, March 30
 
@@ -208,7 +133,7 @@ Lecture
 - crop detections to constant sized
 
 **Annotation tools intro**
-- 
+
 - Run a species Classification Model on the crops. Which one? Species Net, DeepFaune
 - What MegaDetector *doesn't* do: it detects animals, not species
 - The two-stage pipeline: detect → crop → classify
@@ -220,19 +145,19 @@ Lecture
 
 ## Day 2 — Tuesday, March 31
 
-### 09:30–12:30 | Camera Traps & MegaDetector (Lecture & Seminar)
+### 09:30–12:30 | Camera Traps & MegaDetector (Lecture)
 Lecture
 
 ---
 
 ### 13:15–16:00 | Data Processing Practicals
 
-**From Camera Trapping to Aerial Images (40 min)**
+**From Camera Trapping to Aerial Images**
 - Small object detection
 - using slided Inference on Full Images to detect animals
 - 
 
-**MegaDetector Deep Dive (60 min)**
+**MegaDetector Deep Dive**
 - What MegaDetector does: animal / person / vehicle detection
 - How to run it: CameraTraps / `megadetector` Python package, JSON output
 - Interpreting confidence scores; what to do with low-confidence detections
@@ -338,14 +263,15 @@ All Week 1 datasets are downloaded automatically by
 
 ---
 
-## What We Deliberately Skip
+## Ideas for examination projects / Master Thesis or other projects
+- TODO object deduplication via photogrammetry
+- TODO inspect optuna for hyperparameter search.
+- TODO: look into iwildcam data, is could the prevalence of species be tied to landsat 8 images? like is the densitiy tied to some spectra? - https://github.com/visipedia/iwildcam_comp
+- TODO Varoa Mite detection in honeybee hives using AI
+- TODO: https://github.com/bambi-eco/Bambi-QGIS / https://github.com/bambi-eco/Dataset 
+- Find an interesting dataset on roboflow or kaggle, run a YOLOv8 baseline, and do a hyperparameter sweep to improve it
 
-- Backpropagation, loss functions, gradient descent
-- YOLO/DETR architecture internals
-- Model training from scratch
-- Transformer attention math
-
-> The goal is **fluent tool use and conceptual literacy**, not ML research expertise.
+- Train a aerial megadetector model using aerial dataset
 
 
 ---
@@ -412,9 +338,8 @@ aerial observers, mark-recapture, transect walks — are labour-intensive, error
 standardise. Deep learning on remote sensing imagery offers a scalable alternative.
 
 **Applications covered in this course:**
-- UAV-based population estimation (aerial detection)
 - Camera trap classification
-- Sound / passive acoustic monitoring (bioacoustics)
+- UAV-based population estimation (aerial detection)
 
 ---
 
@@ -450,9 +375,9 @@ Standard RGB sensors. Most drone datasets and pre-trained models use RGB.
 - **GBIF** — occurrence data API: https://techdocs.gbif.org/en/openapi/v1/species
 - **Xeno-Canto** — bird sound recordings: https://xeno-canto.org
 - **Kaggle / DrivenData** — competition datasets with ecology focus: https://github.com/drivendataorg
-- iWildCam Challenge Data: https://www.kaggle.com/competitions/iwildcam2022-fgvc9/data
+- **iWildCam Challenge Data**: https://www.kaggle.com/competitions/iwildcam2022-fgvc9/data
 - **Wildlife Insights** — camera trap uploads + SpeciesNet predictions: http://wildlifeinsights.org 
-- **https://zenodo.org/records/8136161** - Crown Data for "Accurate delineation of individual tree crowns in tropical forests from aerial RGB imagery using Mask R-CNN"
+- [**Bamforest**](https://zenodo.org/records/8136161) - Crown Data for "Accurate delineation of individual tree crowns in tropical forests from aerial RGB imagery using Mask R-CNN"
 
 ### Dataset Formats
 - **COCO JSON** — bounding boxes, segmentation masks
@@ -500,40 +425,14 @@ produce inflated metrics. Tiles from the same flight or same beach should stay i
 - **Site-specific model**: all sites in train and val/test. Risk: overfits to known sites, fails on new ones.
 - **Site-aware model**: train on different sites than validation. Better generalisation.
 
-### Leakage Scenarios (ordered by severity)
-- Huge spatial and temporal gap — e.g. Floreana vs. Santa Cruz, 1 year apart ✅ safe
-- Small spatial gap, same date — e.g. same beach, different passes ⚠️ borderline
-- Tiny spatial gap, same flight — overlapping tiles from the same image ❌ leakage risk
+### Data Leakage Scenarios (ordered by severity)
+Data Leakage means Information from the train data set is in the test test set.
+For example a static camera produced images for train and val. The model will perform worse on different perspectives.
+Images produced at the same weather create a bias that weather.
 
 ### Stratified Sampling
 Use stratified sampling to maintain class distributions across splits, especially for imbalanced datasets.
 
----
-
-## Classical Approaches — Rear-Seat Observers & Jolly II
-
-### Aerial Transect Surveys
-Trained human observers in manned aircraft scan defined transects and count animals visually.
-Well-established but subject to observer fatigue, double-counting, and missed detections.
-
-### Mark-Recapture (Jolly-Seber / Jolly II)
-Statistical framework for open populations. Animals are captured, marked, released, and re-encountered
-in subsequent sessions. Jolly II extends this to allow births, deaths, and immigration.
-
-**Key parameters:**
-- `N` — estimated population size
-- `φ` — survival probability
-- `p` — recapture probability
-
-### Distance Sampling
-Animals are counted along transects with distances recorded. Detection probability modelled as a
-function of distance. Widely used in aerial surveys.
-
-### Limitations of Classical Methods
-- Labour-intensive and expensive (manned aircraft, trained observers)
-- Observer fatigue degrades precision over long surveys
-- Hard to standardise across teams and years
-- Cannot be easily replicated at scale across remote island terrain
 
 ---
 
@@ -627,15 +526,17 @@ YOLOv5x → YOLOv8s for fast inference. Classification head based on DINOv2 feat
 - **Weights & Biases** — hyperparameter sweeps, metric logging, model registry
 - **MLflow** — open-source alternative: https://github.com/mlops-ai/mlops
 
-### Reproducibility Checklist
+### Reproducibility
+A method/algorihm/model is only good, when its results can be reproduced.
+
 - [ ] Can the software be installed from scratch? (test on clean environment)
 - [ ] Are model weights versioned and accessible?
 - [ ] Are dataset splits deterministically reproducible?
 - [ ] Are random seeds set for training?
 - [ ] Is the conda/pip environment pinned?
 
-### Known Reproducibility Issues in Wildlife ML
-- WildlifeMapper, Megadetector, HerdNet — installation complexity varies
+This often not true in ecology technology
+Software like WildlifeMapper, Megadetector, HerdNet have complex or even failing installation routines
 - Data availability varies — many published datasets are not publicly released
 - Spatial data leakage is rarely reported but frequently present
 
@@ -665,19 +566,6 @@ HerdNet with DLA-34 backbone, FIDT density maps.
 
 ### Validation
 - Comparison against Zooniverse citizen science volunteer counts
-
----
-
-## Ideas for examination projects / Master Thesis or other projects
-- TODO object deduplication via photogrammetry
-- TODO inspect optuna for hyperparameter search.
-- TODO: look into iwildcam data, is could the prevalence of species be tied to landsat 8 images? like is the densitiy tied to some spectra? - https://github.com/visipedia/iwildcam_comp
-- TODO Varoa Mite detection in honeybee hives using AI
-- TODO: https://github.com/bambi-eco/Bambi-QGIS / https://github.com/bambi-eco/Dataset 
-- Find an interesting dataset on roboflow or kaggle, run a YOLOv8 baseline, and do a hyperparameter sweep to improve it
-
-- Train a aerial megadetector model using aerial dataset
-
 
 ---
 
