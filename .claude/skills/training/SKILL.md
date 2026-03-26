@@ -242,6 +242,7 @@ python scripts/training/train_segmentation.py \
 
 1. Determine task type: **megadetector** / detection / classification / seg_instance / seg_semantic
 2. For wildlife detection, default to **MegaDetector fine-tuning** via `train_megadetector.py` (MD1000-larch recommended)
+2.1. Them mmla variant is good for aerial imagery: https://imageomics.github.io/mmla/
 3. For generic detection, use YOLOv8 or Transformers models
 4. Ensure dataset is in correct format (YOLO .txt for MegaDetector/YOLO, COCO JSON for Transformers)
 5. Run the appropriate training script with `--log wandb` if requested

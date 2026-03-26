@@ -9,7 +9,7 @@ metadata:
 # Practical CV Wildlife — PCV-to-Wildlife Bridge Skill
 
 A 6-agent pipeline that bridges the existing Practical Computer Vision with PyTorch course (Modules 1-8: CNN basics, ResNet, embeddings, CLIP, conceptual detection/segmentation) into the aerial wildlife detection domain. This skill does NOT re-teach PCV content. It generates NEW material that fills identified gaps and adapts existing exercises for wildlife and aerial imagery contexts.
-
+It refers to https://github.com/andandandand/practical-computer-vision 
 ## Quick Start
 
 **Map curriculum gaps:**
@@ -34,7 +34,7 @@ Create a hands-on YOLOv8 fine-tuning exercise that builds on PCV Module 8
 
 **Full course module:**
 ```
-Build a complete 2-week wildlife detection module that slots after PCV Module 6
+Build a complete 2-week wildlife detection module
 ```
 
 ---

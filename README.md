@@ -28,7 +28,7 @@ By the end of the course you will be able to:
 The course is deliberately **not** that much about Deep Learning topics like backpropagation, loss functions, or training
 from scratch. The goal is tool fluency and conceptual literacy — understanding what
 these models do, how to run them, and how to evaluate their outputs for real ecological
-applications.
+applications. If you are curios, check out this course: https://github.com/andandandand/practical-computer-vision 
 
 
 ## Prerequisites
