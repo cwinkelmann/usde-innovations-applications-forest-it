@@ -21,15 +21,22 @@
   - [ ] HerdNet
   - [ ] HerdNet Class Number Modification
 
+
+## Add Excercises
+- [ ] discuss confidence reduction for small objects
+- [ ] look into fp and fn for small objects
+
+###  Introduction to my work of tiny object detection in aerial images in the Iguanas from Above Project
+- [ ] https://colab.research.google.com/github/obss/sahi/blob/main/demo/inference_for_huggingface.ipynb
+- [ ] Herdnet
+
+
 ## Segmentation
 
 
 ## Training
 - [ ] Train YOLO and HerdNet on the Eikelboom dataset, and compare their performance on tiny object detection in aerial images.
 
-## Introduction to my work of tiny object detection in aerial images in the Iguanas from Above Project
-- [ ] https://colab.research.google.com/github/obss/sahi/blob/main/demo/inference_for_huggingface.ipynb
-- [ ] Herdnet
 
 ### Short presentation
 - [ ] short slide deck to show the results of the tiny object detection in aerial images in the Iguanas from Above Project, and to introduce the problem of tiny object detection in aerial images more generally.

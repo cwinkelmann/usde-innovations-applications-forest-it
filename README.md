@@ -668,13 +668,17 @@ HerdNet with DLA-34 backbone, FIDT density maps.
 
 ---
 
-## Ideas for examination projects
+## Ideas for examination projects / Master Thesis or other projects
 - TODO object deduplication via photogrammetry
 - TODO inspect optuna for hyperparameter search.
 - TODO: look into iwildcam data, is could the prevalence of species be tied to landsat 8 images? like is the densitiy tied to some spectra? - https://github.com/visipedia/iwildcam_comp
 - TODO Varoa Mite detection in honeybee hives using AI
 - TODO: https://github.com/bambi-eco/Bambi-QGIS / https://github.com/bambi-eco/Dataset 
 - Find an interesting dataset on roboflow or kaggle, run a YOLOv8 baseline, and do a hyperparameter sweep to improve it
+
+- Train a aerial megadetector model using aerial dataset
+
+
 ---
 
 
