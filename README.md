@@ -70,6 +70,24 @@ work through the complete pipeline:
 - UAV survey design and drone imagery fundamentals
 - Introduction to segmentation — the bridge into Week 2
 
+### Week 1 Practicals
+
+| # | Notebook | Description | Colab |
+|---|----------|-------------|-------|
+| P1 | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap and aerial datasets with four annotation types | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
+| P3a | [practical_0_megadetector_legacy.ipynb](week1/practicals/practical_0_megadetector_legacy.ipynb) | Run MegaDetector v5 on camera trap images, extract crops, compare with v1000 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_0_megadetector_legacy.ipynb) |
+| P3b | [practical_3_megadetector_ultralytics.ipynb](week1/practicals/practical_3_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via ultralytics with SAHI tiled inference | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_3_megadetector_ultralytics.ipynb) |
+| P4 | [practical_04_annotation_tools.ipynb](week1/practicals/practical_04_annotation_tools.ipynb) | Upload images to Label Studio with MegaDetector pre-annotations | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_04_annotation_tools.ipynb) |
+| P5 | [practical_5_species_classification.ipynb](week1/practicals/practical_5_species_classification.ipynb) | Classify animal crops with SpeciesNet and DeepFaune, evaluate with confusion matrix | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_5_species_classification.ipynb) |
+| P6 | [practical_06_aeirial_object_detection-herdnet.ipynb](week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) | Run HerdNet point-based detection on aerial wildlife imagery | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) |
+| P7 | [practical_07_segmentation.ipynb](week1/practicals/practical_07_segmentation.ipynb) | Train a U-Net on a drone tile with a hand-drawn mask | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_07_segmentation.ipynb) |
+| P8 | [practical_08_wrapup.ipynb](week1/practicals/practical_08_wrapup.ipynb) | Export results, structured reflection, Week 2 preview | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_08_wrapup.ipynb) |
+
+### Week 2 Practicals
+
+| # | Notebook | Description | Colab |
+|---|----------|-------------|-------|
+| W2 | [practical_geospatial_segmentation.ipynb](week2/practicals/practical_geospatial_segmentation.ipynb) | Pixel classification on georeferenced rasters with QGIS training points | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week2/practicals/practical_geospatial_segmentation.ipynb) |
 
 ---
 
@@ -169,36 +187,13 @@ By the end of Week 1, students can:
 
 ## Day 1 — Monday, March 30
 
-### 09:30–12:30 | Why AI in Ecology? + UAV Surveys (Lecture & Seminar)
-*Lead: J.-P. Mund — framing lecture*
-*Contribution: C. Winkelmann — case study input*
-
-**Block 1 — The Big Picture (45 min)**
-- The biodiversity monitoring challenge: why we need automated tools
-- What AI can and cannot do in ecology (set honest expectations)
-- The sensing modality landscape: drones, camera traps, satellites, acoustics, RADAR
-  → Keep this visual and fast-paced; goal is curiosity, not completeness
-
-**Block 2 — TODO move this to Day 2 UAV Surveys in Wildlife Ecology (60 min)**
-- How drone surveys work: flight planning, GSD, orthomosaics
-- From pixel to population: the counting problem
-- Case study: Iguanas From Above (Galápagos marine iguanas)
-  → Show real imagery; discuss scale, density, camouflage challenges
-- Brief intro to annotation: what humans do that models learn from
-
-**Break**
-
-**Block 3 — Seminar Discussion (45 min)**
-- What species/habitats would students want to monitor?
-- What would stop a drone survey from working? (weather, access, legal, compute)
-- Group brainstorm: which part of the pipeline is the bottleneck?
-
+### 09:30–12:30 | Why AI in Ecology? + UAV Surveys
+Lecture
 ---
 
 ### 13:15–16:00 | Data & Preprocessing Practicals
-*Lead: C. Winkelmann*
 
-**Practical 0 - Setup**
+**Setup**
 - Run the initial Notebook
 - Download some datasets
 - Install/use pre-configured environment
@@ -206,13 +201,13 @@ By the end of Week 1, students can:
 - Parse JSON output: filter by confidence, extract animal crops
 - Visualise detections with bounding boxes
 
-**Practical 1 — Getting familiar with camera trapping (90 min)**
+**Getting familiar with camera trapping**
 
 - apply a trained model on camera trap images
 - sort into empty / animal / person / vehicle
 - crop detections to constant sized
 
-**Practical 2 — Annotation tools intro (45 min)**
+**Annotation tools intro**
 - 
 - Run a species Classification Model on the crops. Which one? Species Net, DeepFaune
 - What MegaDetector *doesn't* do: it detects animals, not species
@@ -226,22 +221,18 @@ By the end of Week 1, students can:
 ## Day 2 — Tuesday, March 31
 
 ### 09:30–12:30 | Camera Traps & MegaDetector (Lecture & Seminar)
-*Lead: J.-P. Mund & C. Winkelmann*
-
-TODO what is part of the lectures?
-
+Lecture
 
 ---
 
 ### 13:15–16:00 | Data Processing Practicals
-*Lead: C. Winkelmann*
 
-**Practical 1 — From Camera Trapping to Aerial Images (40 min)**
+**From Camera Trapping to Aerial Images (40 min)**
 - Small object detection
 - using slided Inference on Full Images to detect animals
 - 
 
-**Practical 2 — MegaDetector Deep Dive (60 min)**
+**MegaDetector Deep Dive (60 min)**
 - What MegaDetector does: animal / person / vehicle detection
 - How to run it: CameraTraps / `megadetector` Python package, JSON output
 - Interpreting confidence scores; what to do with low-confidence detections
@@ -251,10 +242,10 @@ TODO what is part of the lectures?
 > **Deliberate skip:** We do not cover YOLO architecture internals, anchor boxes,
 > or mAP computation — students use MegaDetector as a tool, not a research object
 
-**Practical 3 — From Detection to Classification (40 min)**
+**Practical 3 — From Detection to Classification**
 
 
-**Practical 4 — Exploration (30 min)**
+**Practical 4 — Exploration**
 - Students browse their detections: what worked, what failed?
 - Common failure modes: motion blur, partial animals, dense vegetation
 - push predictions into label studio to correct them
@@ -264,16 +255,15 @@ TODO what is part of the lectures?
 ## Day 3 — Wednesday, April 1
 
 ### 09:30–12:30 | Image Classification for Wildlife (Lecture & Seminar)
-*Lead: J.-P. Mund & C. Winkelmann*
-
-TODO 
-
+Lecture
 ---
 
-### 13:15–16:00 | Classification Practicals
-*Lead: C. Winkelmann*
+### 13:15–16:00 | Bonus Day
 
-**Practical 5 — Running a classifier (90 min)**
+This Afternoon is free
+
+TODO: prepare some things people might want to do on their own
+**Practical 5 — Running a classifier**
 - Load a pre-trained EfficientNet / TIMM model via Python
 - Run inference on the animal crops from Day 2
 - Build a simple results table: image → detected class → confidence
@@ -286,16 +276,15 @@ TODO
 
 ## Day 4 — Thursday, April 2
 
-### 09:30–12:30 | Introduction to Segmentation (Seminar & Practise)
-*Lead: J.-P. Mund & C. Winkelmann*
+### 09:30–12:30 | Introduction to Segmentation
 
-**Block 1 — From Boxes to Masks (50 min)**
+**From Boxes to Masks (50 min)**
 - Detection vs. Classification vs. Segmentation — visual comparison
 - Semantic segmentation: every pixel gets a class (habitat mapping, land cover)
 - Instance segmentation: separate individual animals or trees
 - Why segmentation matters for Week 2: vegetation mapping, illegal mining detection
 
-**Block 2 — Segmentation in Ecology & Remote Sensing (50 min)**
+**Segmentation in Ecology & Remote Sensing (50 min)**
 - Land cover mapping with Sentinel-2 + U-Net style models
 - Compare U-NET, SegFormer and SAM
 - Tree crown delineation from UAV/LiDAR
@@ -306,7 +295,7 @@ TODO
 
 **Break**
 
-**Block 3 — Q&A + Synthesis Discussion (40 min)**
+**Q&A + Synthesis Discussion (40 min)**
 - Students explain back the pipeline: detect → classify → segment
 - What would a complete AI ecology monitoring system look like?
 - Open questions to carry into the Easter break
@@ -315,19 +304,27 @@ TODO
 ---
 
 ### 13:15–16:00 | Segmentation Practicals + Wrap-up
-*Lead: C. Winkelmann*
 
-**Practical 7 — Intro to semantic segmentation (75 min)**
+
+**Practical 7 — Intro to semantic segmentation**
 - Run a pre-trained segmentation model (e.g. SAM or a simple U-Net)
 - Apply to a small land cover / drone image dataset
 - Visualise class masks overlaid on imagery
 
-**Practical 8 — Week 1 Wrap-up (30 min)**
+**Practical 8 — Week 1 Wrap-up**
 - Students export/save their work from all practicals
 - Short reflection: one thing that surprised you, one open question
 - Preview of Week 2 topics (Radar RS, Galamsey)
 
 ---
+
+---
+
+## Day 5 — Friday, April 3
+
+Free Day because of public holiday
+
+TODO: define some bonus materials for students who want to explore on their own
 
 ## Datasets
 
