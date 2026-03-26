@@ -150,7 +150,7 @@ def download_serengeti(
     if out_dir.exists() and meta_path.exists():
         existing = [p for p in out_dir.iterdir()
                     if p.suffix.lower() in {".jpg", ".jpeg", ".png"}]
-        if len(existing) >= n_images // 2:
+        if len(existing) >= n_images:
             print(f"Serengeti already downloaded ({len(existing)} images in {out_dir})")
             return out_dir
 

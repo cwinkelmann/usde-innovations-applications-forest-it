@@ -79,5 +79,9 @@ dev = [
     "ipykernel",
 ]
 
+animl = [
+    "animl"
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
