@@ -650,3 +650,20 @@
 4. **Best for thermal/multi-modal**: BIRDSAI (#14), NOAA Arctic Seals (#6, #7).
 5. **Largest bbox-annotated aerial datasets**: MMLA-Mpala (#20, 617K boxes), Izembek (#1, 521K pseudo-boxes), Weinstein Birds (#17, 387K boxes).
 6. **Course-specific (Iguanas From Above)**: Dataset #13 is directly relevant to the course via Winkelmann (2025). Not fully public yet.
+
+
+#### TODO
+EW-IL22 (Izembek Lagoon Waterfowl)
+
+LILA BC: https://lila.science/datasets/izembek-lagoon-waterfowl/
+ScienceBase (original USGS release): https://www.sciencebase.gov/catalog/item/62438853d34e21f8275ffd67
+
+JE-TL19 (Eikelboom, Laikipia-Samburu)
+
+4TU.ResearchData: https://doi.org/10.4121/uuid:ba99a206-3e5a-4673-b830-b5c866445b8c
+
+BK-L23 (Koger, Laikipia)
+
+Data on EDMOND (Max Planck): https://doi.org/10.17617/3.EMRZGH
+Code + worked examples: https://github.com/benkoger/overhead-video-worked-examples
+Zenodo (code archive): https://doi.org/10.5281/zenodo.7622940

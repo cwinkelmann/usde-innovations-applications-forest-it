@@ -24,6 +24,7 @@ dependencies = [
     "huggingface_hub",
     "requests",
     "python-dotenv",
+    "loguru",
 ]
 
 [project.optional-dependencies]
@@ -77,6 +78,7 @@ dev = [
     "jupytext",
     "nbconvert",
     "ipykernel",
+
 ]
 
 animl = [

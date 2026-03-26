@@ -23,4 +23,4 @@ dependencies:
   - pip
 
   - pip:
-      - -e ".[training,dev]"
+      - -e ".[training,dev,herdnet]"
