@@ -42,7 +42,7 @@ In order to get started quickly please come prepared with some preparations made
    * conda env create -f environment-megadetector.yml
    * conda env create -f environment-training.yml
    * conda env create -f environment-herdnet.yml
-* Run your a first notebook and see if it works using the megadetector environment: practical_0_megadetector_legacy.ipynb
+* Run your a first notebook and see if it works using the megadetector environment: [practical_0_megadetector_legacy.ipynb](./week1/practicals/practical_0_megadetector_legacy.ipynb)
 * (optional) to get access to Datasets and Models, get yourself an account for huggingface: https://huggingface.co/
 * (optional) to track the performance of trained models get yourself an account for https://wandb.ai/
 

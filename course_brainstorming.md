@@ -1,8 +1,3 @@
-### Prerequisites:
-
-Computing resources
-
-knowledge of Python (and PyTorch)
 
 
 
