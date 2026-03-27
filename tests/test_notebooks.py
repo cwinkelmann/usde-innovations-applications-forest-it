@@ -9,15 +9,10 @@ Marked as @pytest.mark.integration — skipped by default in fast mode.
 Run with: pytest tests/test_notebooks.py -v
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
-# Resolve week1/data/ so download_data is importable
-_DATA_MODULE = Path(__file__).parent.parent / "week1" / "data"
-if str(_DATA_MODULE) not in sys.path:
-    sys.path.insert(0, str(_DATA_MODULE))
 
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
@@ -52,7 +47,7 @@ class TestDownloadSerengeti:
     """Test Snapshot Serengeti download."""
 
     def test_download_creates_images(self, data_dir):
-        from download_data import download_serengeti
+        from wildlife_detection.download_data import download_serengeti
         result = download_serengeti(n_images=5, output_dir=data_dir)
         assert result.exists(), f"Output directory does not exist: {result}"
         n = _count_images(result)
@@ -85,7 +80,7 @@ class TestDownloadCaltech:
     """Test Caltech Camera Traps download."""
 
     def test_download_creates_images(self, data_dir):
-        from download_data import download_caltech
+        from wildlife_detection.download_data import download_caltech
         result = download_caltech(n_images=5, output_dir=data_dir)
         assert result.exists()
         n = _count_images(result)
@@ -112,7 +107,7 @@ class TestDownloadEikelboom:
     """Test Eikelboom 2019 aerial dataset download."""
 
     def test_download_creates_splits(self, data_dir):
-        from download_data import download_eikelboom
+        from wildlife_detection.download_data import download_eikelboom
         result = download_eikelboom(n_images=5, output_dir=data_dir)
         assert result.exists()
         # At least one split directory should exist
@@ -132,7 +127,7 @@ class TestDownloadGeneralDataset:
     """Test HerdNet General Dataset download."""
 
     def test_download_creates_directory(self, data_dir):
-        from download_data import download_general_dataset
+        from wildlife_detection.download_data import download_general_dataset
         result = download_general_dataset(n_images=5, output_dir=data_dir)
         assert result.exists()
 
@@ -149,7 +144,7 @@ class TestDownloadAll:
     """Test the download_all convenience function."""
 
     def test_download_all_returns_dict(self, tmp_path):
-        from download_data import download_all
+        from wildlife_detection.download_data import download_all
         results = download_all(n_images=3, output_dir=tmp_path, skip_weights=True)
         assert isinstance(results, dict)
         for key in ["general_dataset", "serengeti", "caltech", "eikelboom"]:
@@ -162,7 +157,7 @@ class TestSummarize:
     """Test the summarize function."""
 
     def test_summarize_returns_counts(self, data_dir):
-        from download_data import summarize
+        from wildlife_detection.download_data import summarize
         counts = summarize(output_dir=data_dir)
         assert isinstance(counts, dict)
 
@@ -188,17 +183,17 @@ NOTEBOOKS = [
         ],
     ),
     (
-        "practical_3_megadetector_legacy.ipynb",
+        "practical_00_megadetector_legacy.ipynb",
         "fit-megadetector",
         [],
     ),
     (
-        "practical_3_megadetector_ultralytics.ipynb",
+        "practical_02_megadetector_ultralytics.ipynb",
         "fit-training",
         [],
     ),
     (
-        "practical_5_species_classification.ipynb",
+        "practical_05_species_classification.ipynb",
         "fit-training",
         [],
     ),
