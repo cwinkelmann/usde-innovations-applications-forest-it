@@ -26,7 +26,8 @@ By the end of the course you will be able to:
 - Know how to train a model like YOLO on a custom dataset, and how to use tools like SAHI for large image inference
 
 The course is deliberately **not** that much about Deep Learning topics like backpropagation, loss functions, or training
-from scratch. The goal is tool fluency and conceptual literacy — understanding what
+from scratch. If you are curious about that check out this bootcamp: [practical-computer-vision](https://github.com/andandandand/practical-computer-vision)
+The goal is tool fluency and conceptual literacy — understanding what
 these models do, how to run them, and how to evaluate their outputs for real ecological
 applications. If you are curios, check out this course: https://github.com/andandandand/practical-computer-vision 
 
@@ -38,11 +39,13 @@ In order to get started quickly please come prepared with some preparations made
 
 * setup up your python environment like you did in the previous semesters. Conda is preferred, in order to get GDAL and other tools working. 
 * Use an IDE like [PyCharm Pro](https://www.jetbrains.com/pycharm/download/) 
+* Download this repository
+  * ideally via cloning it with git, but you can also download the ZIP and extract it
 * Install the three conda conda environments described en detail in the [Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)
    * conda env create -f environment-megadetector.yml
    * conda env create -f environment-training.yml
    * conda env create -f environment-herdnet.yml
-* Run your a first notebook and see if it works using the megadetector environment: practical_0_megadetector_legacy.ipynb
+* Run your a first notebook and see if it works using the megadetector environment: [practical_00_megadetector_legacy.ipynb](week1/practicals/practical_00_megadetector_legacy.ipynb)
 * (optional) to get access to Datasets and Models, get yourself an account for huggingface: https://huggingface.co/
 * (optional) to track the performance of trained models get yourself an account for https://wandb.ai/
 
@@ -72,23 +75,21 @@ work through the complete pipeline:
 - Introduction to segmentation — the bridge into Week 2
 
 ### Week 1 Practicals
-TODO - review if these match
+
 | #   | Notebook | Description | Colab |
 |-----|----------|-------------|-------|
-| P0  | [practical_0_megadetector_legacy.ipynb](week1/practicals/practical_0_megadetector_legacy.ipynb) | Run MegaDetector v5 on camera trap images, extract crops, compare with v1000 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_0_megadetector_legacy.ipynb) |
-| P1  | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap and aerial datasets with four annotation types | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
-| P3b | [practical_3_megadetector_ultralytics.ipynb](week1/practicals/practical_3_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via ultralytics with SAHI tiled inference | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_3_megadetector_ultralytics.ipynb) |
-| P4  | [practical_04_annotation_tools.ipynb](week1/practicals/practical_04_annotation_tools.ipynb) | Upload images to Label Studio with MegaDetector pre-annotations | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_04_annotation_tools.ipynb) |
-| P5  | [practical_5_species_classification.ipynb](week1/practicals/practical_5_species_classification.ipynb) | Classify animal crops with SpeciesNet and DeepFaune, evaluate with confusion matrix | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_5_species_classification.ipynb) |
-| P6  | [practical_06_aeirial_object_detection-herdnet.ipynb](week1/practicals/practical_06_aerial_object_detection-herdnet.ipynb) | Run HerdNet point-based detection on aerial wildlife imagery | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_06_aeirial_object_detection-herdnet.ipynb) |
-| P7  | [practical_07_segmentation.ipynb](week1/practicals/practical_07_segmentation.ipynb) | Train a U-Net on a drone tile with a hand-drawn mask | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_07_segmentation.ipynb) |
-| P8  | [practical_08_wrapup.ipynb](week1/practicals/practical_08_wrapup.ipynb) | Export results, structured reflection, Week 2 preview | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week1/practicals/practical_08_wrapup.ipynb) |
+| P00 | [practical_00_megadetector_legacy.ipynb](week1/practicals/practical_00_megadetector_legacy.ipynb) | Run MegaDetector v5 (legacy API) on Snapshot Serengeti camera trap images. Visualise detections, crop animals, and compare confidence thresholds. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_00_megadetector_legacy.ipynb) |
+| P01 | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap (Serengeti) and aerial (Eikelboom) datasets side by side. Compare four annotation formats: bounding boxes, points, masks, and class labels. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
+| P02 | [practical_02_megadetector_ultralytics.ipynb](week1/practicals/practical_02_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via the Ultralytics API with SAHI tiled inference. Benchmark standard vs tiled detection on large drone images. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_02_megadetector_ultralytics.ipynb) |
+| P03 | [practical_03_megadetector_animl.ipynb](week1/practicals/practical_03_megadetector_animl.ipynb) | Build an end-to-end camera trap pipeline with animl-py: detect → classify → export. Export results in MegaDetector JSON format for downstream tools. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_03_megadetector_animl.ipynb) |
+| P04 | [practical_04_annotation_tools.ipynb](week1/practicals/practical_04_annotation_tools.ipynb) | Upload images to Label Studio with MegaDetector pre-annotations. Practice correcting and completing bounding box annotations. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_04_annotation_tools.ipynb) |
+| P05 | [practical_05_species_classification.ipynb](week1/practicals/practical_05_species_classification.ipynb) | Classify animal crops with SpeciesNet and DeepFaune; evaluate species-level performance with a confusion matrix. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_05_species_classification.ipynb) |
+| P06a | [practical_06_aerial_object_detection-herdnet.ipynb](week1/practicals/practical_06_aerial_object_detection-herdnet.ipynb) | Run HerdNet point-based detection on nadir aerial wildlife imagery. Compare General and Ennedi model checkpoints with LMDS post-processing. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_06_aerial_object_detection-herdnet.ipynb) |
+| P06b | [practical_06_aerial_animal_detection_domain_shift.ipynb](week1/practicals/practical_06_aerial_animal_detection_domain_shift.ipynb) | Quantify domain shift: run MegaDetector (camera trap model) vs HerdNet (aerial model) on Eikelboom drone images. Visualise confidence distributions and F1 gaps. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_06_aerial_animal_detection_domain_shift.ipynb) |
+| P07 | [practical_07_run_training.ipynb](week1/practicals/practical_07_run_training.ipynb) | Train YOLOv8 on the tiled Eikelboom dataset and run a simplified HerdNet training loop. Compare box-based vs point-based detection approaches. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_07_run_training.ipynb) |
+| P08 | [practical_08_segmentation.ipynb](week1/practicals/practical_08_segmentation.ipynb) | Train a U-Net segmentation model on a drone tile with a hand-drawn mask. Evaluate with IoU and visualise predicted vs ground-truth masks. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_08_segmentation.ipynb) |
+| P09 | [practical_09_wrapup.ipynb](week1/practicals/practical_09_wrapup.ipynb) | Export and compare results across all Week 1 practicals. Structured reflection and preview of Week 2 radar remote sensing topics. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_09_wrapup.ipynb) |
 
-### Week 2 Practicals
-TODO - not done yet
-| # | Notebook | Description | Colab |
-|---|----------|-------------|-------|
-| W2 | [practical_geospatial_segmentation.ipynb](week2/practicals/practical_geospatial_segmentation.ipynb) | Pixel classification on georeferenced rasters with QGIS training points | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/main/week2/practicals/practical_geospatial_segmentation.ipynb) |
 
 ---
 
@@ -119,7 +120,7 @@ Lecture
 ### 13:15–16:00 | Data & Preprocessing Practicals
 
 **Setup**
-- Run the initial Notebook: [Intro](week1/practicals/practical_0_megadetector_legacy.ipynb)
+- Run the initial Notebook: [Intro](week1/practicals/practical_00_megadetector_legacy.ipynb)
 - Download some datasets
 - Install/use pre-configured environment
 - Run MegaDetector on provided camera trap images

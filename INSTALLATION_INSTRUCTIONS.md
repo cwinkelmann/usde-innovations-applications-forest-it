@@ -3,10 +3,11 @@
 It is recommended to use an IDE like VSCode or PyCharm for working with the codebase, but you can also run everything from the command line und jpyter notebooks if you prefer. Get the Pro version of PyCharm from here: https://www.jetbrains.com/help/pycharm/getting-started.html ( it is free as a student ). 
 
 Clone this using your IDE or download the ZIP from GitHub and extract it to your desired location.
+![clone_url.png](doc/assets/clone_url.png)
+![clone_url_2.png](doc/assets/clone_url_2.png)
 
 This course uses **three conda environments** to keep dependencies clean.
-Start with the lightweight `fit-megadetector` environment for the first
-practicals and install the others as needed.
+Start with the lightweight `fit-megadetector` environment for the first practicals and install the others as needed.
 
 ---
 
@@ -40,8 +41,8 @@ print('fit-megadetector OK')
 "
 ```
 
-Run the notebook
-```
+Run the notebooks
+```bash
 jupyter lab 
 ```
 

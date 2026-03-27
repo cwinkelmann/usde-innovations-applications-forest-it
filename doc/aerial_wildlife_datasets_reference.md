@@ -668,3 +668,111 @@ Data on EDMOND (Max Planck): https://doi.org/10.17617/3.EMRZGH
 Code + worked examples: https://github.com/benkoger/overhead-video-worked-examples
 Zenodo (code archive): https://doi.org/10.5281/zenodo.7622940
 
+
+
+# Aerial Wildlife Detection Datasets: Research Notes
+
+Source paper: **May, G., Dalsasso, E., Delplanque, A., Kellenberger, B., & Tuia, D. (2025).** "How to minimize the annotation effort in aerial wildlife surveys." *Ecological Informatics*, 91, 103387. https://doi.org/10.1016/j.ecoinf.2025.103387
+
+Code: https://github.com/gigumay/How-to-Minimize-the-Annotation-Effort-in-Aerial-Wildlife-Surveys
+Test images + model weights: https://zenodo.org/records/15399623
+
+---
+
+## Abbreviation Format
+
+All four abbreviations follow the pattern: **[Author initials]-[Location abbreviation][Year]**
+
+---
+
+## 1. BK-L23 -- Ben Koger, Laikipia, 2023
+
+| Field | Value |
+|---|---|
+| **Full name** | Kenyan Ungulates Overhead Video Dataset |
+| **Paper** | Koger, B., Deshpande, A., Kerby, J.T., Graving, J.M., Costelloe, B.R., & Couzin, I.D. (2023). "Quantifying the movement, behaviour and environmental context of group-living animals using drones and computer vision." *Journal of Animal Ecology*, 92(7), 1357-1371. https://doi.org/10.1111/1365-2656.13904 |
+| **Download URL** | EDMOND: https://doi.org/10.17617/3.EMRZGH |
+| **GitHub** | https://github.com/benkoger/overhead-video-worked-examples |
+| **Study site** | Ol Pejeta and Mpala Conservancies, Laikipia, Kenya |
+| **Field seasons** | Nov 2-16, 2017 and Mar 30 - Apr 19, 2018 |
+| **Platform** | DJI Phantom 4 Pro drone |
+| **Viewpoint** | **Nadir** (top-down, camera pointing straight down) |
+| **Species (5 classes)** | Zebra (Grevy's zebra), Gazelle (Impala in original), Waterbuck, Buffalo, Other |
+| **Images** | 1,913 annotated video frames |
+| **Annotation format** | Bounding boxes (xywh), originally annotated with Labelbox; COCO JSON format |
+| **Notes** | Originally a behavior tracking dataset (overhead video), repurposed for detection. In May et al. (2025), the class names are mapped as: {0: Zebra, 1: Gazelle, 2: Waterbuck, 3: Buffalo, 4: Other}. Images are .jpg format. |
+
+---
+
+## 2. EW-IL22 -- Emily Weiser, Izembek Lagoon, 2022
+
+| Field | Value |
+|---|---|
+| **Full name** | Izembek Lagoon Waterfowl Dataset |
+| **Paper** | Weiser, E.L., Flint, P.L., Marks, D.K., Shults, B.S., Wilson, H.M., Thompson, S.J., & Fischer, J.B. (2022). "Aerial photo imagery from fall waterfowl surveys, Izembek Lagoon, Alaska, 2017-2019." U.S. Geological Survey data release. https://doi.org/10.5066/P9UHP1LE |
+| **LILA BC page** | https://lila.science/datasets/izembek-lagoon-waterfowl/ |
+| **Download (GCP, 124 GB)** | https://storage.googleapis.com/public-datasets-lila/izembek-lagoon-birds/izembek-lagoon-birds.zip |
+| **Study site** | Izembek Lagoon, Alaska, USA |
+| **Platform** | Fixed-wing occupied aircraft, ~457 m altitude |
+| **Viewpoint** | **Nadir** (top-down) |
+| **Species (5 classes)** | Brant (424,790 boxes), Canada Goose (47,561), Gull (5,631), Emperor Goose (2,013), Other (5,631) |
+| **Images** | 9,267 high-resolution images (8688 x 5792 px); ~4,281 annotated as empty |
+| **Total annotations** | 521,270 bounding boxes |
+| **Annotation format** | COCO Camera Traps JSON; originally annotated as **points**, converted to uniform-size boxes centered on annotation points |
+| **Notes** | LILA BC subset of the full USGS dataset (1.82 TB). Empty images were subsampled. Box dimensions are identical per species class, sized to typical bird size. In May et al. (2025), mapped as: {0: Brant, 1: Other, 2: Gull, 3: Canada, 4: Emperor}. |
+
+---
+
+## 3. AD-ENCR23 -- Alexandre Delplanque, Ennedi Natural and Cultural Reserve, 2023
+
+| Field | Value |
+|---|---|
+| **Full name** | Ennedi Natural and Cultural Reserve Aerial Wildlife Dataset |
+| **Paper** | Delplanque, A., Foucher, S., Lejeune, P., Linchant, J., & Theau, J. (2023). "From crowd to herd counting: How to precisely detect and count African mammals using aerial imagery and deep learning?" *ISPRS Journal of Photogrammetry and Remote Sensing*, 197, 167-180. https://doi.org/10.1016/j.isprsjprs.2023.01.025 |
+| **GitHub (HerdNet)** | https://github.com/Alexandre-Delplanque/HerdNet |
+| **Download** | **NOT publicly available** (contains sensitive location information about endangered species) |
+| **Study site** | Ennedi Natural and Cultural Reserve, Chad |
+| **Platform** | Drone, oblique camera angle |
+| **Viewpoint** | **Oblique** (tilted camera, not straight down) |
+| **Species (4 classes)** | Camels (Camelus dromedarius), Donkeys (Equus asinus), Sheep (Ovis aries), Goats (Capra hircus) |
+| **Image resolution** | 24 megapixels per image |
+| **Annotation format** | **Point annotations** (body-centered); pseudo-points derived from bounding box centers, then manually corrected by experienced annotator |
+| **Notes** | This is the dataset HerdNet was originally developed for. The dataset cannot be shared publicly due to sensitive information. In May et al. (2025), test images for this dataset are also excluded from the Zenodo archive. Heterogeneous arid landscape. HerdNet achieved F1 = 73.6%, RMSE = 9.8 animals, processing speed 3.6 s/image. |
+
+---
+
+## 4. JE-TL19 -- Jan Eikelboom, Tsavo/Laikipia, 2019
+
+| Field | Value |
+|---|---|
+| **Full name** | Kenya Aerial Wildlife Survey Dataset (Tsavo + Laikipia-Samburu) |
+| **Paper** | Eikelboom, J.A., Wind, J., Van de Ven, E., Kenana, L.M., Schroder, B., De Knegt, H.J., Van Langevelde, F., & Prins, H.H.T. (2019). "Improving the precision and accuracy of animal population estimates with aerial image object detection." *Methods in Ecology and Evolution*, 10(11), 1875-1887. https://doi.org/10.1111/2041-210X.13277 |
+| **Download (4TU)** | https://data.4tu.nl/articles/dataset/12713903 |
+| **Study sites** | Tsavo National Parks (Kenya, March 2014 survey) and Laikipia-Samburu Ecosystem (Kenya, May 2015 survey) |
+| **Platform** | Kenya Wildlife Service plane-mounted cameras, 90-120 m altitude, 170-200 km/h |
+| **Viewpoint** | **Oblique** (cameras tilted toward the ground from each side of the aircraft, ~200 m strip width) |
+| **Species (3 classes)** | Elephant, Giraffe, Zebra (Plains zebra) |
+| **Images** | 561 total (393 train + 56 validation + 112 test) |
+| **Annotations** | Train: 2,640 elephants + 2,160 giraffes + 4,182 zebras; Val: 140 + 93 + 219; Test: 288 + 261 + 301 |
+| **Total annotations** | ~10,284 bounding boxes |
+| **Annotation format** | Bounding boxes (xywh); CSV format |
+| **Notes** | Animals appear small (~50x50 px avg). RetinaNet detected 95% of elephants, 91% of giraffes, 90% of zebras. In May et al. (2025), mapped as: {0: Elephant, 1: Giraffe, 2: Zebra}. |
+
+---
+
+## Summary Table
+
+| Abbreviation | Full Name | Viewpoint | Species | Images | Annotations | Format | Public? |
+|---|---|---|---|---|---|---|---|
+| **BK-L23** | Koger Laikipia Ungulates | Nadir | Zebra, Gazelle, Waterbuck, Buffalo, Other | 1,913 frames | ~1,913 frames annotated | Bounding box (COCO JSON) | Yes (EDMOND) |
+| **EW-IL22** | Izembek Lagoon Waterfowl | Nadir | Brant, Canada Goose, Gull, Emperor Goose, Other | 9,267 | 521,270 | Point-to-box (COCO CT) | Yes (LILA BC) |
+| **AD-ENCR23** | Ennedi Reserve Mammals | Oblique | Camel, Donkey, Sheep, Goat | Unknown (24 MP) | Unknown | Point annotations | **No** (sensitive) |
+| **JE-TL19** | Kenya Aerial Survey (Tsavo + Laikipia) | Oblique | Elephant, Giraffe, Zebra | 561 | ~10,284 | Bounding box (CSV) | Yes (4TU) |
+
+---
+
+## Key Contrasts for Domain Shift Analysis
+
+- **Nadir datasets** (BK-L23, EW-IL22): top-down view; animals appear as roughly circular/symmetric shapes; less occlusion; easier for standard detectors
+- **Oblique datasets** (AD-ENCR23, JE-TL19): tilted camera; animals have perspective distortion, varying apparent size based on distance from camera; more complex backgrounds; point-based models (HerdNet) often outperform box detectors in this setting
+- May et al. (2025) find that YOLOv8 outperforms HerdNet on nadir images, while performance is competitive on oblique images; counting accuracy is maintained even with reduced annotation effort (points instead of boxes)
