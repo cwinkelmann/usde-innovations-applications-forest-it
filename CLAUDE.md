@@ -80,10 +80,50 @@ Each notebook must run top-to-bottom without errors in its designated conda envi
 | GeoTIFF tiling utilities | `src/wildlife_detection/tiling/` | done |
 | HerdNet training utilities | `src/wildlife_detection/training/` | done |
 | Config loading + W&B helpers | `src/wildlife_detection/utils/` | done |
+| Combined dataset preparation | `src/wildlife_detection/training/prepare_combined_dataset.py` | done |
+| YOLO/RT-DETR training | `src/wildlife_detection/training/train_yolo_combined.py` | done |
+| 3-phase fine-tuning | `src/wildlife_detection/training/phased_finetune.py` | done |
+| Eikelboom evaluation | `src/wildlife_detection/training/eval_eikelboom.py` | done |
 | Pipeline walkthrough notebook | `notebooks/01_pipeline_walkthrough.ipynb` | done |
 | Unit tests | `tests/` | done |
 | `Course_layout.md` | root | done |
 | Setup instructions | `INSTALLATION_INSTRUCTIONS.md` | partial |
+
+### Training scripts (CLI wrappers)
+
+All training logic lives in `src/wildlife_detection/training/`. Thin CLI wrappers are
+in `scripts/training/` — see `scripts/CLAUDE.md` for details.
+
+### Training outputs and artifacts
+
+| Path | Contents |
+|------|----------|
+| `output/comparison_2ep.json` | Model comparison from `evaluate_detectors.py` (deleted in cleanup, was in git commit `e1cb40e`). Contains per-class P/R/F1 for RT-DETR 2-epoch baseline on Eikelboom val at conf=0.3. |
+| `output/dfine_nano_smoke/` | D-FINE nano smoke test (Transformers format, 3 classes: Elephant/Giraffe/Zebra) |
+| `output/eikelboom_rtdetr_tiled/` | RT-DETR v2 trained on Eikelboom tiles (Transformers format) |
+| `output/mdv6_finetune_test/` | MDV6 RT-DETR fine-tuning test run |
+| `weights/md_v1000.0.0-larch.pt` | MegaDetector v1000 larch (YOLO11L, MIT license) |
+| `wandb/` | WandB run logs from March 18, 2026 — 4 runs: sorrel (no freeze), sorrel (freeze=10), larch (freeze=10), rtdetr (freeze=10) |
+
+### Research documentation
+
+| Path | Contents |
+|------|----------|
+| `doc/fine_tuning_yolo11.md` | Dataset analysis and 3-phase training strategy for aerial wildlife YOLO fine-tuning. Covers Eikelboom benchmark, MMLA, Koger, Liège, WAID datasets. |
+| `doc/aerial_wildlife_datasets_reference.md` | Comprehensive survey of aerial wildlife detection datasets |
+
+### External datasets (NAS storage)
+
+Training datasets live on NAS at `/data/mnt/storage/Datasets/`. Key datasets:
+
+| Dataset | NAS Path | Format |
+|---------|----------|--------|
+| Eikelboom 2019 | `ImprovingPrecisionAccuracy_Eikelboom2019data/` | CSV bboxes, 5000×3000 images |
+| MMLA Wilds | `mmla_wilds/` | YOLO native, 2720-4096px frames |
+| Koger Ungulates | `Quantifying the movement.../kenyan-ungulates/` | COCO JSON, 4096×2160 |
+| Koger Geladas | `Quantifying the movement.../geladas/` | COCO JSON |
+| Liège Multispecies | `Multispecies detection.../general_dataset/` | CSV + COCO JSON, 6000×4000 |
+| Combined (tiled) | `combined_aerial_yolo_640/` | Unified YOLO 640px tiles (built by `prepare_combined_dataset.py`) |
 
 ---
 

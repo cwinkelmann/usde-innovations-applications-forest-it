@@ -668,6 +668,7 @@ Data on EDMOND (Max Planck): https://doi.org/10.17617/3.EMRZGH
 Code + worked examples: https://github.com/benkoger/overhead-video-worked-examples
 Zenodo (code archive): https://doi.org/10.5281/zenodo.7622940
 
+https://github.com/AgustinRoca/aerial-wildlife-datasets 
 
 
 # Aerial Wildlife Detection Datasets: Research Notes

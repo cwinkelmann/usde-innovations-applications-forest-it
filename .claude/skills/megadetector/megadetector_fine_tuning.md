@@ -310,7 +310,15 @@ spending time debugging NMS suppression of adjacent animals.
 
 ## TODO for Claude Code
 
-- [ ] Download larch and MDV6-rtdetr-c weights to `weights/`
+- [x] Download larch weights to `weights/md_v1000.0.0-larch.pt`
+- [x] Build combined aerial wildlife dataset pipeline (`scripts/training/prepare_combined_dataset.py`)
+      — merges Eikelboom + MMLA + Koger Ungulates + Koger Geladas + Liège into unified YOLO 640px tiles
+      with MegaDetector class mapping (animal=0, person=1)
+- [x] Write training script for combined dataset (`scripts/training/train_combined_yolo11.py`)
+      — fine-tunes YOLO11L (larch) with freeze=10, CLI args for all hyperparams
+- [x] Write Eikelboom test set evaluation (`scripts/training/eval_eikelboom.py`)
+      — remaps species labels to MegaDetector classes, reports mAP vs RetinaNet baseline
+- [ ] Download MDV6-rtdetr-c weights to `weights/`
 - [ ] Create a small test dataset from LILA BC Snapshot Serengeti (100 images)
   to verify fine-tuning pipelines run end-to-end before scaling
 - [ ] Write a unified `finetune.py` script with `--model {larch,sorrel,rtdetr}`

@@ -242,7 +242,10 @@ python scripts/training/train_segmentation.py \
 
 1. Determine task type: **megadetector** / detection / classification / seg_instance / seg_semantic
 2. For wildlife detection, default to **MegaDetector fine-tuning** via `train_megadetector.py` (MD1000-larch recommended)
-2.1. Them mmla variant is good for aerial imagery: https://imageomics.github.io/mmla/
+2.1. The MMLA variant is good for aerial imagery: https://imageomics.github.io/mmla/
+2.2. For combined multi-dataset training, use `prepare_combined_dataset.py` + `train_combined_yolo11.py`
+     (see "Combined aerial wildlife dataset pipeline" section below)
+2.3. Dataset research and strategy documented in `doc/fine_tuning_yolo11.md`
 3. For generic detection, use YOLOv8 or Transformers models
 4. Ensure dataset is in correct format (YOLO .txt for MegaDetector/YOLO, COCO JSON for Transformers)
 5. Run the appropriate training script with `--log wandb` if requested
@@ -566,17 +569,93 @@ Both can be enabled simultaneously: `--log wandb tensorboard`.
 ## File index
 
 ```
-scripts/training/
-  convert_dataset.py         ← format converter (VOC CSV / COCO / YOLO)
-  validate_dataset.py        ← pre-flight checker for all five task types
-  train_megadetector.py      ← fine-tune any MegaDetector (MD1000 + MDV6, ultralytics)
-  train_detection.py         ← object detection (RTDETRv2, YOLOS, DETR — Transformers)
-  train_classification.py    ← image classification (ViT, DINOv2, MobileViT, ResNet)
-  train_segmentation.py      ← instance seg (Mask2Former) + semantic seg (SegFormer)
-  evaluate_detectors.py      ← compare models: P, R, F1, mAP (any ultralytics .pt)
-  calibrate_confidence.py    ← find optimal confidence threshold for animal counting
-  diagnose_training.py       ← detect early dip, overfitting, LR issues; suggest fixes
+scripts/training/                           (CLI wrappers — logic in src/wildlife_detection/training/)
+  prepare_combined_dataset.py ← ✅ merge 5 datasets into unified YOLO 640px tiles
+  train_combined_yolo11.py    ← ✅ fine-tune YOLO or RT-DETR (auto-detects model type)
+  phased_finetune.py          ← ✅ 3-phase progressive unfreezing (head → partial → full)
+  eval_eikelboom.py           ← ✅ evaluate on Eikelboom test set (remaps to MegaDetector classes)
+  reproduce_runs.sh           ← ✅ re-run all 4 original WandB experiments from 2026-03-18
+
+src/wildlife_detection/training/            (implementation modules)
+  prepare_combined_dataset.py ← dataset conversion, tiling, class remapping
+  train_yolo_combined.py      ← YOLO/RT-DETR training with auto RT-DETR detection
+  phased_finetune.py          ← 3-phase TrainConfig/PhaseConfig dataclasses + runner
+  eval_eikelboom.py           ← Eikelboom test set setup + evaluation
+
+scripts/training/  (deleted in repo cleanup, recoverable from git commit e1cb40e)
+  train_megadetector.py       ← original MegaDetector fine-tuning (replaced by train_combined_yolo11.py)
+  evaluate_detectors.py       ← model comparison P/R/F1/mAP (produced output/comparison_2ep.json)
+  convert_dataset.py          ← format converter CSV/COCO/YOLO (replaced by prepare_combined_dataset.py)
+
+scripts/training/  (not yet implemented)
+  validate_dataset.py         ← pre-flight checker for all five task types
+  train_detection.py          ← object detection (RTDETRv2, YOLOS, DETR — Transformers)
+  train_classification.py     ← image classification (ViT, DINOv2, MobileViT, ResNet)
+  train_segmentation.py       ← instance seg (Mask2Former) + semantic seg (SegFormer)
+  calibrate_confidence.py     ← find optimal confidence threshold for animal counting
+  diagnose_training.py        ← detect early dip, overfitting, LR issues; suggest fixes
 ```
+
+### Training artifacts in output/
+
+| File | Origin | Contents |
+|------|--------|----------|
+| `output/comparison_2ep.json` | `evaluate_detectors.py` (git `e1cb40e`, now deleted) | Per-class P/R/F1 + mAP for RT-DETR 2-epoch run on Eikelboom val, conf=0.3 |
+| `output/dfine_nano_smoke/` | Transformers Trainer | D-FINE nano smoke test (3 classes, HGNetV2 backbone) |
+| `output/eikelboom_rtdetr_tiled/` | Transformers Trainer | RTDETRv2 on Eikelboom tiles (checkpoints 246, 12054, 12300) |
+| `output/mdv6_finetune_test/` | Transformers Trainer | MDV6 RT-DETR test run |
+
+### WandB run history
+
+Previous runs from 2026-03-18 in `wandb/run-20260318_*`. CLI args recoverable from
+`wandb/run-*/files/wandb-metadata.json` → `args` field. Config values in
+`wandb/run-*/files/config.yaml`.
+
+### Combined aerial wildlife dataset pipeline (implemented)
+
+Prepares and trains on a unified dataset from 5 aerial wildlife sources, all mapped to
+MegaDetector classes (animal=0, person=1):
+
+```bash
+# Step 1: Prepare combined dataset (tiles all sources to 640×640 YOLO format)
+python scripts/training/prepare_combined_dataset.py \
+  --output /data/mnt/storage/Datasets/combined_aerial_yolo_640 \
+  --tile-size 640 --overlap 120 \
+  --sources eikelboom,koger_ungulates,koger_geladas,liege,mmla \
+  --download-mmla  # downloads MMLA Wilds from HuggingFace if missing
+
+# Step 2: Train YOLO11L (MegaDetector larch weights, frozen backbone)
+python scripts/training/train_combined_yolo11.py \
+  --data /data/mnt/storage/Datasets/combined_aerial_yolo_640/dataset.yaml \
+  --weights weights/md_v1000.0.0-larch.pt \
+  --epochs 50 --batch 16 --freeze 10
+
+# Step 3: Evaluate on Eikelboom test set
+python scripts/training/eval_eikelboom.py \
+  --weights output/combined_yolo11/larch-freeze10-combined/weights/best.pt
+```
+
+**Datasets included:**
+
+| Dataset | Source Format | Class Mapping |
+|---------|-------------|---------------|
+| Eikelboom (tiled) | YOLO 640px | Elephant/Giraffe/Zebra → animal |
+| MMLA Wilds | YOLO native (HuggingFace) | zebra/giraffe/onager/dog → animal |
+| Koger Ungulates | COCO JSON | zebra/gazelle/wbuck/buffalo/other → animal |
+| Koger Geladas | COCO JSON | gelada/adult_male → animal, human → person |
+| Liège Multispecies | CSV + COCO JSON | 6 African species → animal |
+
+**MegaDetector larch weights:** `weights/md_v1000.0.0-larch.pt` (auto-downloaded)
+
+**Research reference:** `doc/fine_tuning_yolo11.md` — comprehensive analysis of the 5 aerial
+wildlife datasets, the Eikelboom benchmark's oblique-aerial characteristics, domain gap
+quantification (20–50 point mAP drop for COCO-pretrained models on aerial data), and
+the evidence-backed 3-phase training strategy (freeze backbone → progressive unfreeze →
+full fine-tune). Key findings:
+- MMLA study showed 52-point mAP50 improvement from fine-tuning (30% → 82%)
+- Dataset coherence matters more than raw diversity (WAID cross-dataset experiment)
+- Eikelboom is oblique manned-aircraft imagery, not nadir drone — training data should cover both
+- No existing paper directly optimises training mixtures for the Eikelboom test set
 
 Install dependencies:
 ```bash
