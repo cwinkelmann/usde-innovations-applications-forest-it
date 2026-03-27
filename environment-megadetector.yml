@@ -1,0 +1,25 @@
+# fit-megadetector — Lightweight environment for data exploration + MegaDetector inference
+#
+# Covers: P1 (datasets), P3 (MegaDetector), P4 (Label Studio)
+#
+# Install:
+#   conda env create -f environment-megadetector.yml
+#   conda activate fit-megadetector
+#
+# Update:
+#   conda env update -f environment-megadetector.yml --prune
+#
+# Verify:
+#   python -c "import megadetector; print('fit-megadetector OK')"
+
+name: fit-megadetector
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip
+
+  - pip:
+      - -e ".[megadetector,dev]"

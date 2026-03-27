@@ -1,0 +1,33 @@
+# fit-herdnet — Geospatial pipeline (extends fit-training with GDAL/rasterio)
+#
+# Only needed for geospatial workflows (GeoTIFF tiling, coordinate transforms).
+# Students doing only Practicals 1–8 can skip this environment.
+#
+# Install:
+#   conda env create -f environment-herdnet.yml
+#   conda activate fit-herdnet
+#
+# Update:
+#   conda env update -f environment-herdnet.yml --prune
+#
+# Verify:
+#   python -c "import rasterio, geopandas; print('fit-herdnet OK')"
+
+name: fit-herdnet
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip
+
+  # Geospatial stack — MUST come from conda, pip installs break
+  - gdal
+  - rasterio
+  - geopandas
+  - fiona
+  - shapely
+
+  - pip:
+      - -e ".[herdnet,dev]"

@@ -1,0 +1,26 @@
+# fit-training — Full training & inference pipeline (Practicals 3–8)
+#
+# Covers: P3 (YOLOv8 + SAHI), P5 (species classifier), P6 (HerdNet),
+#         P7 (segmentation), P8 (wrap-up)
+#
+# Install:
+#   conda env create -f environment-training.yml
+#   conda activate fit-training
+#
+# Update:
+#   conda env update -f environment-training.yml --prune
+#
+# Verify:
+#   python -c "import ultralytics, sahi, timm; print('fit-training OK')"
+
+name: fit-training
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip
+
+  - pip:
+      - -e ".[training,dev,herdnet]"
