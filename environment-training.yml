@@ -23,4 +23,4 @@ dependencies:
   - pip
 
   - pip:
-      - -e ".[training,dev,herdnet]"
+      - -e ".[training,dev,herdnet, labelstudio]"

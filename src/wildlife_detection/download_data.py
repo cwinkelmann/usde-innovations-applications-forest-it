@@ -11,7 +11,7 @@ CLI usage::
 
 Library usage::
 
-    from week1.data.download_data import download_serengeti, download_all
+    from wildlife_detection.download_data import download_serengeti, download_all
 
     download_serengeti(n_images=10)                          # 10 Serengeti images
     download_all(n_images=25)                                # 25 images from each source
