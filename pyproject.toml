@@ -69,6 +69,7 @@ herdnet = [
 #   docker run -p 8080:8080 humansignal/label-studio
 labelstudio = [
     "label-studio",
+    "label-studio-sdk",
 ]
 
 # Development tools (not needed in Colab)
@@ -78,7 +79,7 @@ dev = [
     "jupytext",
     "nbconvert",
     "ipykernel",
-
+    "ipywidgets",
 ]
 
 animl = [

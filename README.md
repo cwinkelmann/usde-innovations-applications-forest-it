@@ -5,7 +5,7 @@ A practical course on automated wildlife monitoring using drone imagery, camera 
 
 ---
 
-## TL;DR
+## Intro
 
 Wildlife ecologists are drowning in data. A camera trap network generates millions of images per year.
 A single drone survey can produce tens of thousands of images. 
@@ -35,19 +35,134 @@ applications. If you are curios, check out this course: https://github.com/andan
 ## Prerequisites
 In order to get started quickly please come prepared with some preparations made. This will help you focus on the wildlife detection part.
 
-### Software environment: 
+### Software environment
 
-* setup up your python environment like you did in the previous semesters. Conda is preferred, in order to get GDAL and other tools working. 
-* Use an IDE like [PyCharm Pro](https://www.jetbrains.com/pycharm/download/) 
-* Download this repository
-  * ideally via cloning it with git, but you can also download the ZIP and extract it
-* Install the three conda conda environments described en detail in the [Installation Instructions](./INSTALLATION_INSTRUCTIONS.md)
-   * conda env create -f environment-megadetector.yml
-   * conda env create -f environment-training.yml
-   * conda env create -f environment-herdnet.yml
-* Run your a first notebook and see if it works using the megadetector environment: [practical_00_megadetector_legacy.ipynb](week1/practicals/practical_00_megadetector_legacy.ipynb)
-* (optional) to get access to Datasets and Models, get yourself an account for huggingface: https://huggingface.co/
-* (optional) to track the performance of trained models get yourself an account for https://wandb.ai/
+**Recommended IDE:** [PyCharm Pro](https://www.jetbrains.com/pycharm/download/) (free for students) or VSCode.
+
+**Get the repository:**
+```bash
+git clone https://github.com/cwinkelmann/usde-innovations-applications-forest-it.git
+cd usde-innovations-applications-forest-it
+```
+Or download the ZIP from GitHub and extract it.
+
+---
+
+## Installation
+
+This course uses **two separate Python environments** to keep dependencies clean.
+Start with the lightweight `fit-megadetector` environment and install the others when needed.
+
+You need ~10 GB free disk space for both environments and datasets.
+
+Choose **Option A (conda)** or **Option B (virtualenv)** below.
+---
+
+### Option A — Conda (recommended, especially on Windows)
+
+Conda handles binary dependencies like GDAL automatically, which is why it is the default.
+Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) if you do not have it yet.
+
+#### 1 — `fit-megadetector` (Practicals P00–P03, data exploration)
+
+```bash
+conda env create -f environment-megadetector.yml
+conda activate fit-megadetector
+pip install -e ".[megadetector,dev]"
+```
+
+Verify:
+```bash
+python -c "import megadetector; print('fit-megadetector OK')"
+python -c "import wildlife_detection; print('fit-megadetector OK')"
+
+```
+
+#### 2 — `fit-training` (Practicals P04–P08, YOLO + SAHI + classifiers)
+
+```bash
+conda env create -f environment-training.yml
+conda activate fit-training
+```
+
+Verify:
+```bash
+python -c "import ultralytics, sahi, timm; print('fit-training OK')"
+```
+
+
+To update or remove an environment:
+```bash
+conda env update -f environment-megadetector.yml --prune  # update
+conda deactivate && conda env remove -n fit-megadetector -y  # remove
+```
+
+---
+
+### Option B — virtualenv (no Conda required)
+
+Use this if you prefer a plain Python virtual environment, are working in a Linux/macOS environment
+where Conda is not set up, or are running on Google Colab.
+
+> **Note:** The `fit-herdnet` environment requires GDAL. On Linux/macOS you can install it
+> via your system package manager (`brew install gdal` / `apt install gdal-bin libgdal-dev`).
+> On Windows, GDAL is easiest via Conda (Option A) — the virtualenv path is not recommended for P06+.
+
+#### 1 — `fit-megadetector` equivalent
+
+```bash
+python -m venv .venv-megadetector
+python3 -m venv --clear .venv-megadetector
+pip install -e ".[megadetector,dev]"
+```
+
+#### 2 — `fit-training` equivalent
+
+```bash
+python -m venv .venv-training
+python3 -m .venv-training/bin/activate
+pip install -e ".[training,dev]"
+```
+
+
+
+#### Google Colab
+
+Each notebook can be opened in Colab via the badge in the practicals table below.
+The first cell in each notebook installs all required dependencies:
+
+```python
+# Run this in Colab before anything else
+!git clone -b course_draft https://github.com/cwinkelmann/usde-innovations-applications-forest-it.git fit-course
+%cd fit-course
+!pip install -e ".[megadetector,dev]"   # or [training,dev] / [herdnet,dev]
+```
+
+---
+
+### First run check
+
+Open [practical_00_megadetector_legacy.ipynb](week1/practicals/practical_00_megadetector_legacy.ipynb)
+in JupyterLab and run it top to bottom. If MegaDetector downloads a checkpoint and produces detections,
+your setup is working.
+
+```bash
+jupyter lab
+```
+
+**Troubleshooting — Label Studio won't start:**
+```bash
+label-studio start              # default port 8080
+label-studio start --port 8081  # if 8080 is busy
+```
+On Windows, run in a standard terminal, not WSL.
+
+---
+
+### Optional accounts
+
+* [Hugging Face](https://huggingface.co/) — access to datasets and model weights
+* [Weights & Biases](https://wandb.ai/) — experiment tracking during training (P07)
 
 ---
 
@@ -95,7 +210,7 @@ work through the complete pipeline:
 
 ## Repository Structure
 ```
-INSTALLATION_INSTRUCTIONS.md  ← How to set up your environment (read before Day 1)
+README.md                     ← This file — course overview + installation instructions
 Course_layout.md              ← Master course schedule and pedagogical structure
 week1/
   lectures/                   ← Slide decks and lecture notes (Week 1)
@@ -114,8 +229,9 @@ week2/
 ## Day 1 — Monday, March 30
 
 ### 09:30–12:30 | Why AI in Ecology? + UAV Surveys
+
 Lecture
----
+
 
 ### 13:15–16:00 | Data & Preprocessing Practicals
 
