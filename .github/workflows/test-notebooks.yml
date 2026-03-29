@@ -33,7 +33,10 @@ env:
             for out in cell.get("outputs", []):
                 # traceback is a list of ANSI-coloured strings
                 tb = ANSI.sub("", "\n".join(out.get("traceback", [])))
-                text = ANSI.sub("", out.get("text", "")) + tb
+                text_raw = out.get("text", "")
+                if isinstance(text_raw, list):
+                    text_raw = "".join(text_raw)
+                text = ANSI.sub("", text_raw) + tb
                 hit = next((e for e in FATAL if e in text), None)
                 if hit:
                     src = "".join(cell["source"])[:120].replace("\n", " ")
