@@ -20,6 +20,7 @@ Library usage::
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import io
 import json
 import os
@@ -33,8 +34,31 @@ from huggingface_hub import hf_hub_download, list_repo_tree
 from tqdm import tqdm
 
 _DEFAULT_DIR = Path(__file__).parent  # week1/data/
+def _parallel_hf_download(
+    repo_id: str,
+    filenames: list,
+    local_dir: str,
+    repo_type: str = "dataset",
+    max_workers: int = 8,
+) -> None:
+    """Download *filenames* from a HuggingFace repo in parallel, skipping existing files."""
+    def _one(filename: str) -> None:
+        dest = Path(local_dir) / filename
+        if dest.exists():
+            return
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        hf_hub_download(
+            repo_id=repo_id, repo_type=repo_type,
+            filename=filename, local_dir=local_dir,
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
+        list(tqdm(pool.map(_one, filenames), total=len(filenames), desc="Downloading"))
+
+
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"}
+ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar"}
 
 
 def _is_image(filename: str) -> bool:
@@ -80,16 +104,20 @@ def download_general_dataset(
             if hasattr(entry, "rfilename")
         ]
         images = sorted(f for f in all_files if _is_image(f))
-        non_images = [f for f in all_files if not _is_image(f)]
+        # Skip archives (.zip etc.) — only fetch small metadata files
+        meta_files = [f for f in all_files
+                      if not _is_image(f)
+                      and Path(f).suffix.lower() not in ARCHIVE_EXTENSIONS]
 
-        for f in non_images:
-            hf_hub_download(repo_id=repo_id, repo_type="dataset",
-                            filename=f, local_dir=str(out))
-
-        for f in images[:n_images]:
-            hf_hub_download(repo_id=repo_id, repo_type="dataset",
-                            filename=f, local_dir=str(out))
-        print(f"  Downloaded {min(n_images, len(images))}/{len(images)} images")
+        # Early exit if we already have enough images on disk
+        existing = sum(1 for f in images[:n_images] if (out / f).exists())
+        if existing >= min(n_images, len(images)):
+            print(f"  Already have {existing} images — skipping download")
+        else:
+            _parallel_hf_download(repo_id, meta_files, str(out))
+            to_dl = images[:n_images]
+            _parallel_hf_download(repo_id, to_dl, str(out))
+            print(f"  Downloaded {min(n_images, len(images))}/{len(images)} images")
 
     print(f"  Saved to {out}")
     return out
@@ -335,7 +363,8 @@ def download_caltech(
         for a in meta["annotations"]
         if a["image_id"] in sampled_id_set
     ]
-    labels_path = output_dir / "camera_trap_labels.csv"
+    labels_path = output_dir / "camera_trap" / "caltech_camera_trap_labels.csv"
+    labels_path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(labels_path, index=False)
     print(f"  Reference labels → {labels_path}")
 
@@ -387,11 +416,11 @@ def download_eikelboom(
             for entry in list_repo_tree(repo_id, repo_type="dataset", recursive=True)
             if hasattr(entry, "rfilename")
         ]
-        # Download non-image files (metadata, labels, configs)
-        non_images = [f for f in all_files if not _is_image(f)]
-        for f in non_images:
-            hf_hub_download(repo_id=repo_id, repo_type="dataset",
-                            filename=f, local_dir=str(out))
+        # Download non-image files (metadata, labels, configs) — skip archives
+        non_images = [f for f in all_files
+                      if not _is_image(f)
+                      and Path(f).suffix.lower() not in ARCHIVE_EXTENSIONS]
+        _parallel_hf_download(repo_id, non_images, str(out))
 
         # Group images by split directory and limit per split
         from collections import defaultdict
@@ -403,12 +432,10 @@ def download_eikelboom(
 
         total = 0
         for split, files in split_files.items():
-            to_download = files[:n_images]
-            for f in to_download:
-                hf_hub_download(repo_id=repo_id, repo_type="dataset",
-                                filename=f, local_dir=str(out))
-            total += len(to_download)
-            print(f"  {split or 'root'}: {len(to_download)}/{len(files)} images")
+            to_download = [f for f in files[:n_images] if not (out / f).exists()]
+            _parallel_hf_download(repo_id, to_download, str(out))
+            total += len(files[:n_images])
+            print(f"  {split or 'root'}: {len(files[:n_images])}/{len(files)} images")
         print(f"  Downloaded {total} images total")
 
     # Count what we got
@@ -417,6 +444,137 @@ def download_eikelboom(
         if split_dir.exists():
             imgs = list(split_dir.glob("*.jpg")) + list(split_dir.glob("*.png"))
             print(f"  {split}: {len(imgs)} images")
+
+    print(f"  Saved to {out}")
+    return out
+
+
+def download_camera_traps(
+    n_images: Optional[int] = None,
+    output_dir: Path = _DEFAULT_DIR,
+    subset: Optional[str] = None,
+    folders: Optional[list] = None,
+) -> Path:
+    """karisu/CameraTraps — private camera trap dataset from HuggingFace.
+
+    Downloads four folders used in Week 1 Practical 02 and 03:
+
+    * ``02_MedaDetector_Student_test_images`` — student test images (P02)
+    * ``02_image-data-GH_Sep2025``            — Glücksburgerheide field data Sep 2025 (P02)
+    * ``03_Megadetector student test images`` — student test images (P03)
+    * ``03_imagedata-GH_28.01.2026``          — Glücksburgerheide field data Jan 2026 (P03)
+
+    .. note::
+        This dataset is **private**.  You must be logged in first::
+
+            huggingface-cli login
+
+        or set the ``HF_TOKEN`` environment variable.
+
+    Parameters
+    ----------
+    n_images : int or None
+        Max images to download per folder.  ``None`` downloads all.
+    output_dir : Path
+        Parent directory.  Dataset goes into ``output_dir / camera_traps``.
+    subset : str or None
+        Friendly name selecting which folders to download.  Options:
+
+        * ``"all"``       — all four folders (default)
+        * ``"p02"``       — both P02 folders
+        * ``"p03"``       — both P03 folders
+        * ``"p02_test"``  — 02_MedaDetector_Student_test_images
+        * ``"p02_field"`` — 02_image-data-GH_Sep2025
+        * ``"p03_test"``  — 03_Megadetector student test images
+        * ``"p03_field"`` — 03_imagedata-GH_28.01.2026
+
+    folders : list[str] or None
+        Low-level override: explicit HuggingFace folder names.
+        Takes precedence over ``subset`` when provided.
+
+    Returns
+    -------
+    Path to the camera_traps directory.
+    """
+    _ALL_FOLDERS = [
+        "02_MedaDetector_Student_test_images",
+        "02_image-data-GH_Sep2025",
+        "03_Megadetector student test images",
+        "03_imagedata-GH_28.01.2026",
+    ]
+    _SUBSET_MAP: dict = {
+        "all"      : _ALL_FOLDERS,
+        "p02"      : ["02_MedaDetector_Student_test_images", "02_image-data-GH_Sep2025"],
+        "p03"      : ["03_Megadetector student test images", "03_imagedata-GH_28.01.2026"],
+        "p02_test" : ["02_MedaDetector_Student_test_images"],
+        "p02_field": ["02_image-data-GH_Sep2025"],
+        "p03_test" : ["03_Megadetector student test images"],
+        "p03_field": ["03_imagedata-GH_28.01.2026"],
+    }
+
+    if folders is not None:
+        target_folders = set(folders)
+    elif subset is not None:
+        if subset not in _SUBSET_MAP:
+            raise ValueError(
+                f"Unknown subset {subset!r}. "
+                f"Choose one of: {list(_SUBSET_MAP)}"
+            )
+        target_folders = set(_SUBSET_MAP[subset])
+    else:
+        target_folders = set(_ALL_FOLDERS)
+
+    out = output_dir / "camera_traps"
+    out.mkdir(parents=True, exist_ok=True)
+    repo_id = "karisu/CameraTraps"
+    print(f"\n=== karisu/CameraTraps (n={n_images or 'all'}) ===")
+    print("  Private dataset — requires huggingface-cli login or HF_TOKEN")
+
+    if n_images is None:
+        from huggingface_hub import snapshot_download
+        allow = []
+        for f in _ALL_FOLDERS:
+            if f in target_folders:
+                allow += [f"{f}/*", f"{f}/**/*"]
+        snapshot_download(
+            repo_id=repo_id,
+            repo_type="dataset",
+            local_dir=str(out),
+            allow_patterns=allow,
+        )
+    else:
+        from collections import defaultdict
+        all_files = [
+            entry.rfilename
+            for entry in list_repo_tree(repo_id, repo_type="dataset", recursive=True)
+            if hasattr(entry, "rfilename")
+        ]
+
+        folder_images: dict = defaultdict(list)
+        folder_other: dict = defaultdict(list)
+        for f in sorted(all_files):
+            top = f.split("/")[0] if "/" in f else ""
+            if top not in target_folders:
+                continue
+            if _is_image(f):
+                folder_images[top].append(f)
+            else:
+                folder_other[top].append(f)
+
+        # Non-image files first (annotations, readmes, etc.)
+        other_all = [f for files in folder_other.values() for f in files]
+        _parallel_hf_download(repo_id, other_all, str(out))
+
+        total = 0
+        for folder in _ALL_FOLDERS:
+            if folder not in target_folders:
+                continue
+            imgs = folder_images[folder]
+            to_dl = [f for f in imgs[:n_images] if not (out / f).exists()]
+            _parallel_hf_download(repo_id, to_dl, str(out))
+            total += len(imgs[:n_images])
+            print(f"  {folder}: {len(imgs[:n_images])}/{len(imgs)} images")
+        print(f"  Downloaded {total} images total")
 
     print(f"  Saved to {out}")
     return out
@@ -461,11 +619,11 @@ def download_mmla_wilds(
             for entry in list_repo_tree(repo_id, repo_type="dataset", recursive=True)
             if hasattr(entry, "rfilename")
         ]
-        # Download non-image files (metadata, labels, configs, yaml)
-        non_images = [f for f in all_files if not _is_image(f)]
-        for f in non_images:
-            hf_hub_download(repo_id=repo_id, repo_type="dataset",
-                            filename=f, local_dir=str(out))
+        # Download non-image files (metadata, labels, configs, yaml) — skip archives
+        non_images = [f for f in all_files
+                      if not _is_image(f)
+                      and Path(f).suffix.lower() not in ARCHIVE_EXTENSIONS]
+        _parallel_hf_download(repo_id, non_images, str(out))
 
         # Group images by directory (splits or species folders) and limit per group
         from collections import defaultdict
@@ -477,12 +635,10 @@ def download_mmla_wilds(
 
         total = 0
         for group, files in group_files.items():
-            to_download = files[:n_images]
-            for f in to_download:
-                hf_hub_download(repo_id=repo_id, repo_type="dataset",
-                                filename=f, local_dir=str(out))
-            total += len(to_download)
-            print(f"  {group or 'root'}: {len(to_download)}/{len(files)} images")
+            to_download = [f for f in files[:n_images] if not (out / f).exists()]
+            _parallel_hf_download(repo_id, to_download, str(out))
+            total += len(files[:n_images])
+            print(f"  {group or 'root'}: {len(files[:n_images])}/{len(files)} images")
         print(f"  Downloaded {total} images total")
 
     print(f"  Saved to {out}")
@@ -498,6 +654,7 @@ def download_all(
     n_images: int = 50,
     output_dir: Path = _DEFAULT_DIR,
     skip_weights: bool = False,
+    include_camera_traps: bool = False,
 ) -> dict[str, Path]:
     """Download all Week 1 datasets.
 
@@ -509,6 +666,9 @@ def download_all(
         Root directory for all downloads.
     skip_weights : bool
         If True, skip HerdNet weight download.
+    include_camera_traps : bool
+        If True, also download the private ``karisu/CameraTraps`` dataset.
+        Requires HuggingFace authentication (``huggingface-cli login``).
 
     Returns
     -------
@@ -524,6 +684,9 @@ def download_all(
     results["caltech"] = download_caltech(n_images, output_dir)
     results["eikelboom"] = download_eikelboom(n_images, output_dir)
     results["mmla_wilds"] = download_mmla_wilds(n_images, output_dir)
+
+    if include_camera_traps:
+        results["camera_traps"] = download_camera_traps(n_images, output_dir)
 
     print("\n" + "=" * 50)
     print("Week 1 datasets ready.")
@@ -566,7 +729,7 @@ def _load_serengeti_meta(output_dir: Path) -> Optional[dict]:
 def _load_caltech_labels(output_dir: Path):
     """Load Caltech labels CSV, return None if missing."""
     import pandas as pd
-    csv_path = output_dir / "camera_trap_labels.csv"
+    csv_path = output_dir / "camera_trap" / "caltech_camera_trap_labels.csv"
     if not csv_path.exists():
         return None
     return pd.read_csv(csv_path)

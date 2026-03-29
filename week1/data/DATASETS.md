@@ -13,14 +13,15 @@ python week1/data/download_data.py --n-images 20  # exact count per source
 
 ## Dataset Overview
 
-| Dataset                                                                            | Source | Annotation | License | Used in |
-|------------------------------------------------------------------------------------|--------|------------|---------|---------|
-| [HerdNet General Dataset](https://huggingface.co/datasets/karisu/General_Dataset)  | HuggingFace | Point annotations (CSV) | ULiège Open Data | P1 (aerial), HerdNet notebook |
-| [Snapshot Serengeti](https://lila.science/datasets/snapshot-serengeti)             | LILA BC | Species labels + COCO bboxes | CDLA Permissive | P1, P3, P4 |
-| [Caltech Camera Traps](https://lila.science/datasets/caltech-camera-traps)         | LILA BC | COCO bboxes + species CSV | CDLA Permissive | P3, P5, P6 |
-| [Eikelboom 2019](https://huggingface.co/datasets/karisu/Eikelboom2019)             | HuggingFace | YOLO bboxes (3 species) | CC-BY 4.0 | P1, P3 (SAHI) |
-| [MMLA Wilds](https://huggingface.co/datasets/imageomics/mmla_wilds)                | HuggingFace | YOLO bboxes (4 species) | CC-BY 4.0 | P1, P3 |
-| [HerdNet pretrained weights](https://huggingface.co/karisu/HerdNet)                | HuggingFace | `.pth` checkpoint | — | HerdNet notebook |
+| Dataset                                                                          | Source | Annotation                   | License | Used in |
+|----------------------------------------------------------------------------------|-------|------------------------------|---------|---------|
+| [HerdNet General Dataset](https://huggingface.co/datasets/karisu/General_Dataset) | HuggingFace | Point annotations (CSV)      | ULiège Open Data | P1 (aerial), HerdNet notebook |
+| [Snapshot Serengeti](https://lila.science/datasets/snapshot-serengeti)           | LILA BC | Species labels + COCO bboxes | CDLA Permissive | P1, P3, P4 |
+| [Caltech Camera Traps](https://lila.science/datasets/caltech-camera-traps)       | LILA BC | COCO bboxes + species CSV    | CDLA Permissive | P3, P5, P6 |
+| [Eikelboom 2019](https://huggingface.co/datasets/karisu/Eikelboom2019)           | HuggingFace | YOLO bboxes (3 species)      | CC-BY 4.0 | P1, P3 (SAHI) |
+| [MMLA Wilds](https://huggingface.co/datasets/imageomics/mmla_wilds)              | HuggingFace | YOLO bboxes (4 species)      | CC-BY 4.0 | P1, P3 |
+| [HerdNet pretrained weights](https://huggingface.co/karisu/HerdNet)              | HuggingFace | `.pth` checkpoint            | — | HerdNet notebook |
+| [HNEE Camera Traps](https://huggingface.co/datasets/karisu/CameraTraps)                                                  | HNEE | None                         | — | P1, P7 |
 
 ### Other Dataset Sources (Reference)
 

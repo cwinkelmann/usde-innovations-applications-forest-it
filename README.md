@@ -131,7 +131,7 @@ pip install -e ".[training,dev]"
 Each notebook can be opened in Colab via the badge in the practicals table below.
 The first cell in each notebook installs all required dependencies:
 
-```python
+```bash
 # Run this in Colab before anything else
 !git clone -b course_draft https://github.com/cwinkelmann/usde-innovations-applications-forest-it.git fit-course
 %cd fit-course
@@ -139,6 +139,14 @@ The first cell in each notebook installs all required dependencies:
 ```
 
 ---
+
+#### Remote SSH Connection
+If you are running on a remote server, set up an SSH connection with port forwarding for JupyterLab. In PyCharm this is pretty much automatic when you set up a remote interpreter. Make sure to sync not to temp directories, but to a persistent location on the server. For this your [VPN needs to active](https://zammad.hnee.de/help/de-de/30-vpn-laufwerke) and your [ssh public key(https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)] needs to be added to the server by [Jens Mueller](https://www.hnee.de/p/jens-mueller).
+Then connect to the remote server 
+```bash
+olive: ssh -i .ssh/id_ed25519 cwinkelmann@10.188.2.1
+carrot: ssh -i .ssh/id_ed25519 cwinkelmann@10.188.1.1
+```
 
 ### First run check
 

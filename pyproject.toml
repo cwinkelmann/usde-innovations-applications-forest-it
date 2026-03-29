@@ -52,6 +52,8 @@ training = [
     "tqdm",
     "wandb",
     "speciesnet",
+    "torchgeo",                      # P8: geospatial dataset loading (LandCoverAI)
+    "segmentation-models-pytorch",   # P8: U-Net and other segmentation architectures
 ]
 
 # fit-herdnet: geospatial pipeline (extends training with GDAL/rasterio)
