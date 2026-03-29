@@ -197,6 +197,29 @@ NOTEBOOKS = [
         "fit-training",
         [],
     ),
+    (
+        "practical_07_run_training.ipynb",
+        "fit-training",
+        ["yolo_dataset", "eikelboom_coco"],
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Script-based notebook execution
+# ---------------------------------------------------------------------------
+
+# (notebook, conda env)  — expected outputs checked via exit code only.
+# Notebooks are converted to .py via nbconvert --to script, then executed with
+# plain `python`.  This catches import errors, NameErrors, and broken species
+# mappings without the overhead of the full Jupyter execution kernel.
+NOTEBOOKS_SCRIPT = [
+    ("practical_01_visual_wildlife_datasets.ipynb", "fit-megadetector"),
+    ("practical_00_megadetector_legacy.ipynb",       "fit-megadetector"),
+    ("practical_02_megadetector_ultralytics.ipynb",  "fit-training"),
+    ("practical_05_species_classification.ipynb",    "fit-training"),
+    ("practical_06_aerial_animal_detection_domain_shift.ipynb", "fit-training"),
+    ("practical_07_run_training.ipynb",              "fit-training"),
+    ("practical_08_segmentation.ipynb",              "fit-training"),
 ]
 
 
@@ -243,6 +266,101 @@ def _conda_env_exists(env_name: str) -> bool:
         capture_output=True, text=True,
     )
     return env_name in result.stdout
+
+
+def _execute_notebook_as_script(
+    notebook_path: Path, conda_env: str, timeout: int = 600
+):
+    """Convert a notebook to a .py script and execute it in a conda environment.
+
+    Steps:
+    1. ``jupyter nbconvert --to script`` → produces a ``.py`` in a temp dir.
+    2. Strip ``get_ipython()`` magic calls so the script runs under plain Python.
+    3. ``conda run -n <env> python <script.py>`` from the notebook's directory.
+
+    Returns (success: bool, error_message: str).
+    """
+    import re
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        script_stem = Path(tmp_dir) / notebook_path.stem
+
+        # Step 1 — convert to Python script
+        conv = subprocess.run(
+            [
+                "conda", "run", "-n", conda_env, "--no-capture-output",
+                "jupyter", "nbconvert", "--to", "script",
+                "--output", str(script_stem),
+                str(notebook_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if conv.returncode != 0:
+            err = conv.stderr or conv.stdout
+            return False, f"nbconvert conversion failed:\n{err[-1500:]}"
+
+        script_path = Path(str(script_stem) + ".py")
+        if not script_path.exists():
+            return False, f"Converted script not found at: {script_path}"
+
+        # Step 2 — strip IPython magic calls (e.g. %matplotlib inline → no-op)
+        source = script_path.read_text(encoding="utf-8")
+        source = re.sub(
+            r"^get_ipython\(\).*$", "# [magic removed]",
+            source, flags=re.MULTILINE,
+        )
+        script_path.write_text(source, encoding="utf-8")
+
+        # Step 3 — run the cleaned script
+        run = subprocess.run(
+            [
+                "conda", "run", "-n", conda_env, "--no-capture-output",
+                "python", str(script_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout + 60,
+            cwd=str(notebook_path.parent),
+        )
+        if run.returncode != 0:
+            err = run.stderr or run.stdout
+            return False, err[-3000:]
+        return True, ""
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+class TestNotebookScript:
+    """Integration tests that convert notebooks to .py scripts and execute them.
+
+    This approach catches errors (NameError, missing mappings, import failures)
+    with cleaner tracebacks than the full Jupyter execution path.  Each
+    notebook is converted via ``nbconvert --to script``, IPython magics are
+    stripped, and the result is run with ``python`` inside its conda env.
+
+    Run a single notebook::
+
+        pytest tests/test_notebooks.py::TestNotebookScript::test_notebook_runs[practical_07_run_training] -v
+    """
+
+    @pytest.mark.parametrize(
+        "notebook, conda_env",
+        NOTEBOOKS_SCRIPT,
+        ids=[Path(n).stem for n, _ in NOTEBOOKS_SCRIPT],
+    )
+    def test_notebook_runs(self, notebook, conda_env):
+        nb_path = NOTEBOOKS_DIR / notebook
+        if not nb_path.exists():
+            pytest.skip(f"{notebook} not yet created")
+        if not _conda_env_exists(conda_env):
+            pytest.skip(f"conda env '{conda_env}' not installed")
+
+        success, error = _execute_notebook_as_script(nb_path, conda_env)
+        assert success, f"{notebook} failed as script in '{conda_env}':\n{error}"
 
 
 @pytest.mark.integration

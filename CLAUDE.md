@@ -6,7 +6,12 @@ Python utilities for a two-week course on AI-assisted wildlife monitoring.
 
 **Key references:**
 - `README.md` — course overview, literature, case studies, learning objectives
-- `Course_layout.md` — full day-by-day schedule, learning goals, deliberate skips
+- `INSTALLATION_INSTRUCTIONS.md` — full day-by-day schedule, learning goals, deliberate skips
+
+- doc/* — research documentation, dataset surveys, training strategy notes
+- src/wildlife_detection/ — Python package with tiling utilities, training scripts
+- .claude/skill - extensive notes for Claude Code on architecture, design patterns, and coding conventions
+- .claude/agents — agent definitions for code generation, refactoring, and test writing (TODO)
 
 ---
 
