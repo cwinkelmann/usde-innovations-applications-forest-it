@@ -121,7 +121,7 @@ pip install -e ".[megadetector,dev]"
 ```bash
 python -m venv .venv-training
 python3 -m .venv-training/bin/activate
-pip install -e ".[training,dev]"
+pip install -e ".[training,dev,herdnet,labelstudio]"
 ```
 
 
@@ -133,20 +133,13 @@ The first cell in each notebook installs all required dependencies:
 
 ```bash
 # Run this in Colab before anything else
-!git clone -b course_draft https://github.com/cwinkelmann/usde-innovations-applications-forest-it.git fit-course
+!git clone  https://github.com/cwinkelmann/usde-innovations-applications-forest-it.git fit-course
 %cd fit-course
 !pip install -e ".[megadetector,dev]"   # or [training,dev] / [herdnet,dev]
 ```
 
----
 
-#### Remote SSH Connection
-If you are running on a remote server, set up an SSH connection with port forwarding for JupyterLab. In PyCharm this is pretty much automatic when you set up a remote interpreter. Make sure to sync not to temp directories, but to a persistent location on the server. For this your [VPN needs to active](https://zammad.hnee.de/help/de-de/30-vpn-laufwerke) and your [ssh public key(https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)] needs to be added to the server by [Jens Mueller](https://www.hnee.de/p/jens-mueller).
-Then connect to the remote server 
-```bash
-olive: ssh -i .ssh/id_ed25519 cwinkelmann@10.188.2.1
-carrot: ssh -i .ssh/id_ed25519 cwinkelmann@10.188.1.1
-```
+
 
 ### First run check
 
@@ -199,179 +192,67 @@ work through the complete pipeline:
 
 ### Week 1 Practicals
 
-| #   | Notebook | Description | Colab |
-|-----|----------|-------------|-------|
-| P00 | [practical_00_megadetector_legacy.ipynb](week1/practicals/practical_00_megadetector_legacy.ipynb) | Run MegaDetector v5 (legacy API) on Snapshot Serengeti camera trap images. Visualise detections, crop animals, and compare confidence thresholds. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_00_megadetector_legacy.ipynb) |
-| P01 | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap (Serengeti) and aerial (Eikelboom) datasets side by side. Compare four annotation formats: bounding boxes, points, masks, and class labels. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
-| P02 | [practical_02_megadetector_ultralytics.ipynb](week1/practicals/practical_02_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via the Ultralytics API with SAHI tiled inference. Benchmark standard vs tiled detection on large drone images. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_02_megadetector_ultralytics.ipynb) |
-| P03 | [practical_03_megadetector_animl.ipynb](week1/practicals/practical_03_megadetector_animl.ipynb) | Build an end-to-end camera trap pipeline with animl-py: detect → classify → export. Export results in MegaDetector JSON format for downstream tools. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_03_megadetector_animl.ipynb) |
-| P04 | [practical_04_annotation_tools.ipynb](week1/practicals/practical_04_annotation_tools.ipynb) | Upload images to Label Studio with MegaDetector pre-annotations. Practice correcting and completing bounding box annotations. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_04_annotation_tools.ipynb) |
-| P05 | [practical_05_species_classification.ipynb](week1/practicals/practical_05_species_classification.ipynb) | Classify animal crops with SpeciesNet and DeepFaune; evaluate species-level performance with a confusion matrix. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_05_species_classification.ipynb) |
-| P06a | [practical_06_aerial_object_detection-herdnet.ipynb](week1/practicals/practical_06_aerial_object_detection-herdnet.ipynb) | Run HerdNet point-based detection on nadir aerial wildlife imagery. Compare General and Ennedi model checkpoints with LMDS post-processing. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_06_aerial_object_detection-herdnet.ipynb) |
-| P06b | [practical_06_aerial_animal_detection_domain_shift.ipynb](week1/practicals/practical_06_aerial_animal_detection_domain_shift.ipynb) | Quantify domain shift: run MegaDetector (camera trap model) vs HerdNet (aerial model) on Eikelboom drone images. Visualise confidence distributions and F1 gaps. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_06_aerial_animal_detection_domain_shift.ipynb) |
-| P07 | [practical_07_run_training.ipynb](week1/practicals/practical_07_run_training.ipynb) | Train YOLOv8 on the tiled Eikelboom dataset and run a simplified HerdNet training loop. Compare box-based vs point-based detection approaches. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_07_run_training.ipynb) |
-| P08 | [practical_08_segmentation.ipynb](week1/practicals/practical_08_segmentation.ipynb) | Train a U-Net segmentation model on a drone tile with a hand-drawn mask. Evaluate with IoU and visualise predicted vs ground-truth masks. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_08_segmentation.ipynb) |
-| P09 | [practical_09_wrapup.ipynb](week1/practicals/practical_09_wrapup.ipynb) | Export and compare results across all Week 1 practicals. Structured reflection and preview of Week 2 radar remote sensing topics. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_09_wrapup.ipynb) |
+| #    | Notebook | Description                                                                                                                                                                                                                       | Colab |
+|------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
+| P00  | [practical_00_megadetector_legacy.ipynb](week1/practicals/practical_00_megadetector_legacy.ipynb) | Run MegaDetector v5 (legacy API) on Snapshot Serengeti camera trap images. Visualise detections, crop animals, and compare confidence thresholds.                                                                                 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_00_megadetector_legacy.ipynb) |
+| P01  | [practical_01_visual_wildlife_datasets.ipynb](week1/practicals/practical_01_visual_wildlife_datasets.ipynb) | Explore camera trap (Serengeti) and aerial (Eikelboom) datasets side by side. Compare four annotation formats: bounding boxes, points, masks, and class labels. Shows how to tile images and save tiles with annotations to disk. | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_01_visual_wildlife_datasets.ipynb) |
+| P02  | [practical_02_megadetector_ultralytics.ipynb](week1/practicals/practical_02_megadetector_ultralytics.ipynb) | Run MegaDetector v1000 via the Ultralytics API with SAHI tiled inference. Investigate how confidence scores behave across detection thresholds.                                                                                   | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_02_megadetector_ultralytics.ipynb) |
+| P03  | [practical_03_hnee_camera_traps.ipynb](week1/practicals/practical_03_hnee_camera_traps.ipynb) | Apply MegaDetector to real HNEE camera trap data. Explore detections, crop animals, and run SpeciesNet species classification with country-level geofencing (Germany). Output feeds into P07.                                     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_03_hnee_camera_traps.ipynb) |
+| P05  | [practical_05_species_classification.ipynb](week1/practicals/practical_05_species_classification.ipynb) | Classify animal crops with SpeciesNet on Serengeti images.                                                                                                                                                                        | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_05_species_classification.ipynb) |
+| P05b | [practical_05b_megadetector_confidence_analysis.ipynb](week1/practicals/practical_05b_megadetector_confidence_analysis.ipynb) | Investigate MegaDetector v1000 confidence scores on Serengeti: compare detections against ground-truth labels to understand precision, recall, and threshold trade-offs.                                                          | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_05b_megadetector_confidence_analysis.ipynb) |
+| P05c | [practical_05c_speciesnet_evaluation.ipynb](week1/practicals/practical_05c_speciesnet_evaluation.ipynb) | Evaluate SpeciesNet predictions against Serengeti ground-truth species labels. Build a confusion matrix and measure per-species accuracy.                                                                                         | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_05c_speciesnet_evaluation.ipynb) |
+| P06a | [HerdNet demo notebook](https://github.com/cwinkelmann/HerdNet/blob/main/notebooks/demo-training-testing-herdnet_local.ipynb) | Run HerdNet point-based detection on aerial wildlife imagery.                                                                                                                                                                     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/HerdNet/blob/main/notebooks/demo-training-testing-herdnet_local.ipynb) |
+| P06b | [practical_06_aerial_animal_detection_domain_shift.ipynb](week1/practicals/practical_06_aerial_animal_detection_domain_shift.ipynb) | Quantify domain shift: run MegaDetector (camera trap model) vs HerdNet (aerial model) on Eikelboom drone images. Visualise confidence distributions and F1 gaps.                                                                  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_06_aerial_animal_detection_domain_shift.ipynb) |
+| P07  | [practical_07_annotation_tools.ipynb](week1/practicals/practical_07_annotation_tools.ipynb) | Upload HNEE or Serengeti images to Label Studio with SpeciesNet species labels as pre-annotations. Filter by species, review and correct bounding boxes, export corrected annotations as COCO JSON.                               | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_07_annotation_tools.ipynb) |
+| P08  | [practical_08_run_training.ipynb](week1/practicals/practical_08_run_training.ipynb) | Train object detectors on labelled date from practical 07.                                                                                                                                                                        | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_08_run_training.ipynb) |
+| P09  | [practical_09_wrapup.ipynb](week1/practicals/practical_09_wrapup.ipynb) | Export and compare results across all Week 1 practicals. Structured reflection and preview of Week 2 radar remote sensing topics.                                                                                                 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cwinkelmann/usde-innovations-applications-forest-it/blob/course_draft/week1/practicals/practical_09_wrapup.ipynb) |
 
 
 ---
 
 ## Repository Structure
 ```
-README.md                     ← This file — course overview + installation instructions
-Course_layout.md              ← Master course schedule and pedagogical structure
+README.md                          ← This file — course overview + installation instructions
+Course_layout.md                   ← Master course schedule and pedagogical structure
+environment-training.yml           ← Conda environment for all Week 1 practicals
+
 week1/
-  lectures/                   ← Slide decks and lecture notes (Week 1)
-  practicals/                 ← jupyter notebooks and exercise scripts
-  data/                       ← Sample datasets for practicals (or download scripts)
+  lectures/                        ← Slide decks and lecture notes (Week 1)
+  practicals/                      ← Jupyter notebooks (one per practical block)
+  data/                            ← Sample datasets (downloaded on first run)
+
 week2/
-  lectures/                   ← Slide decks and lecture notes (Week 2)
-  practicals/                 ← jupyter notebooks and exercise scripts
+  lectures/                        ← Slide decks and lecture notes (Week 2)
+  practicals/                      ← Jupyter notebooks
   data/
+
+weights/                           ← Pre-trained model weights (not in git)
+  md_v1000.0.0-larch.pt            ← MegaDetector v1000 larch (YOLO11L, 25 MB)
+  md_v1000.0.0-spruce.pt           ← MegaDetector v1000 spruce (YOLOv5s, 13 MB, edge)
+
+scripts/
+  training/
+    train_combined_yolo11.py       ← Fine-tune YOLO / RT-DETR on any dataset
+    phased_finetune.py             ← 3-phase progressive unfreezing
+    prepare_combined_dataset.py    ← Tile & merge aerial datasets → YOLO 640px
+    eval_eikelboom.py              ← Evaluate on Eikelboom test set
+
+src/wildlife_detection/            ← Python package (pip install -e .)
+  tiling/
+    boxes.py                       ← Tile images with YOLO bounding-box annotations
+    points.py                      ← Tile images with point annotations (HerdNet)
+    utils.py                       ← Shared tiling helpers
+  training/
+    train_yolo_combined.py         ← YOLO/RT-DETR training logic
+    phased_finetune.py             ← Phased fine-tuning implementation
+    prepare_combined_dataset.py    ← Dataset preparation pipeline
+    eval_eikelboom.py              ← Eikelboom evaluation logic
+  label_studio.py                  ← Label Studio upload / export helpers
+  utils/                           ← Config loading, W&B helpers
 ```
 
 
----
 
-
-## Day 1 — Monday, March 30
-
-### 09:30–12:30 | Why AI in Ecology? + UAV Surveys
-
-Lecture
-
-
-### 13:15–16:00 | Data & Preprocessing Practicals
-
-**Setup**
-- Run the initial Notebook: [Intro](week1/practicals/practical_00_megadetector_legacy.ipynb)
-- Download some datasets
-- Install/use pre-configured environment
-- Run MegaDetector on provided camera trap images
-- Parse JSON output: filter by confidence, extract animal crops
-- Visualise detections with bounding boxes
-
-**Getting familiar with camera trapping**
-
-- apply a trained model on camera trap images
-- sort into empty / animal / person / vehicle
-- crop detections to constant sized
-
-**Annotation tools intro**
-
-- Run a species Classification Model on the crops. Which one? Species Net, DeepFaune
-- What MegaDetector *doesn't* do: it detects animals, not species
-- The two-stage pipeline: detect → crop → classify
-- Overview of classification models used in ecology:
-  DeepFaune, Wildlife Insights, iNaturalist CV, custom classifiers
-- What training data looks like; ImageNet vs. domain-specific datasets
-- 
----
-
-## Day 2 — Tuesday, March 31
-
-### 09:30–12:30 | Camera Traps & MegaDetector (Lecture)
-Lecture
-
----
-
-### 13:15–16:00 | Data Processing Practicals
-
-**From Camera Trapping to Aerial Images**
-- Small object detection
-- using slided Inference on Full Images to detect animals
-- 
-
-**MegaDetector Deep Dive**
-- What MegaDetector does: animal / person / vehicle detection
-- How to run it: CameraTraps / `megadetector` Python package, JSON output
-- Interpreting confidence scores; what to do with low-confidence detections
-- Wildlife Insights platform as a managed alternative
-- Live demo: run MegaDetector on a small camera trap dataset
-
-> **Deliberate skip:** We do not cover YOLO architecture internals, anchor boxes,
-> or mAP computation — students use MegaDetector as a tool, not a research object
-
-**Practical 3 — From Detection to Classification**
-
-
-**Practical 4 — Exploration**
-- Students browse their detections: what worked, what failed?
-- Common failure modes: motion blur, partial animals, dense vegetation
-- push predictions into label studio to correct them
-
----
-
-## Day 3 — Wednesday, April 1
-
-### 09:30–12:30 | Image Classification for Wildlife (Lecture & Seminar)
-Lecture
----
-
-### 13:15–16:00 | Bonus Day
-
-This Afternoon is free
-
-TODO: prepare some things people might want to do on their own
-**Practical 5 — Running a classifier**
-- Load a pre-trained EfficientNet / TIMM model via Python
-- Run inference on the animal crops from Day 2
-- Build a simple results table: image → detected class → confidence
-
-**Practical 6 — Evaluating results (30 min)**
-- Quick accuracy check against a small labelled reference set
-- Where does it fail? What does that mean for field use?
-
----
-
-## Day 4 — Thursday, April 2
-
-### 09:30–12:30 | Introduction to Segmentation
-
-**From Boxes to Masks (50 min)**
-- Detection vs. Classification vs. Segmentation — visual comparison
-- Semantic segmentation: every pixel gets a class (habitat mapping, land cover)
-- Instance segmentation: separate individual animals or trees
-- Why segmentation matters for Week 2: vegetation mapping, illegal mining detection
-
-**Segmentation in Ecology & Remote Sensing (50 min)**
-- Land cover mapping with Sentinel-2 + U-Net style models
-
-> **Bridge moment:** "Segmentation is the tool; next week you'll use it on a
-> real deforestation detection problem"
-
-**Break**
-
-**Q&A + Synthesis Discussion (40 min)**
-- Students explain back the pipeline: detect → classify → segment
-- What would a complete AI ecology monitoring system look like?
-- Open questions to carry into the Easter break
-- Discuss matures geospatial AI tools like TorchGeo
-
----
-
-### 13:15–16:00 | Segmentation Practicals + Wrap-up
-TODO: practical_07_segmentation.ipynb
-
-**Practical 7 — Intro to semantic segmentation**
-- Run a pre-trained segmentation model (e.g. SAM or a simple U-Net)
-- Apply to a small land cover / drone image dataset
-- Visualise class masks overlaid on imagery
-
-**Practical 8 — Week 1 Wrap-up**
-- Students export/save their work from all practicals
-- Short reflection: one thing that surprised you, one open question
-- Preview of Week 2 topics (Radar RS, Galamsey)
-
----
-
----
-
-## Day 5 — Friday, April 3
-
-Free Day because of public holiday
-
-TODO: define some bonus materials for students who want to explore on their own
 
 ## Datasets
 
@@ -388,13 +269,33 @@ All Week 1 datasets are downloaded automatically by
 
 ---
 
-## Ideas for examination projects / Master Thesis or other projects
-- TODO object deduplication via photogrammetry
-- TODO inspect optuna for hyperparameter search.
-- TODO: look into iwildcam data, is could the prevalence of species be tied to landsat 8 images? like is the densitiy tied to some spectra? - https://github.com/visipedia/iwildcam_comp
-- TODO Varoa Mite detection in honeybee hives using AI
-- TODO: https://github.com/bambi-eco/Bambi-QGIS / https://github.com/bambi-eco/Dataset 
-- Find an interesting dataset on roboflow or kaggle, run a YOLOv8 baseline, and do a hyperparameter sweep to improve it
+## Ideas for Examination Projects, Master Theses, and Further Work
+
+- **Object deduplication via photogrammetry** — Animals detected across overlapping drone
+  tiles are often counted multiple times. Use structure-from-motion or homography to
+  de-duplicate detections across frames and produce accurate census counts.
+
+- **Hyperparameter optimisation with Optuna** — Replace manual learning-rate and
+  augmentation tuning with a principled Bayesian search. Compare Optuna sweeps against
+  the fixed hyperparameters used in this course.
+
+- **Species distribution modelling with iWildCam + Landsat 8** — Can the prevalence of
+  a species in camera trap images be predicted from satellite spectral data (NDVI, land
+  cover, water proximity)? The [iWildCam dataset](https://github.com/visipedia/iwildcam_comp)
+  provides geo-tagged detections that could be cross-referenced with Landsat 8 bands.
+
+- **Varroa mite detection in honeybee hives** — Train a close-range detector on macro
+  images of bees to identify Varroa destructor infestations — a high-impact use case for
+  precision apiculture.
+
+- **Thermal deer detection with BAMBI** — The [BAMBI dataset](https://github.com/bambi-eco/Dataset)
+  provides thermal UAV imagery of deer in agricultural fields. The accompanying
+  [QGIS plugin](https://github.com/bambi-eco/Bambi-QGIS) enables geospatial annotation
+  and export — an end-to-end pipeline from drone survey to population map.
+
+- **Open-ended detector benchmark** — Pick a wildlife dataset from Roboflow or Kaggle,
+  establish a YOLOv8 baseline, run a hyperparameter sweep, and report which changes
+  moved the needle most.
 
 - Train a aerial megadetector model using aerial dataset
 
@@ -654,6 +555,7 @@ YOLOv5x → YOLOv8s for fast inference. Classification head based on DINOv2 feat
 ### Reproducibility
 A method/algorihm/model is only good, when its results can be reproduced.
 
+- [ ] Is there a clear README with instructions to run the code?
 - [ ] Can the software be installed from scratch? (test on clean environment)
 - [ ] Are model weights versioned and accessible?
 - [ ] Are dataset splits deterministically reproducible?

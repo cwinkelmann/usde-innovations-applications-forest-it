@@ -62,15 +62,27 @@ from PIL import Image
 
 # ── Label configs ──────────────────────────────────────────────────────────────
 
+def make_bbox_config(labels: list[str]) -> str:
+    """Build a Label Studio bbox XML config for the given label names.
+
+    Labels are used as-is — no extras are appended. Pass every label you need
+    (including ``"person"`` and ``"vehicle"`` for non-animal MD categories).
+    """
+    palette = [
+        "#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6",
+        "#1ABC9C", "#E67E22", "#34495E", "#E91E63", "#00BCD4",
+    ]
+    lines = ['<View>', '  <Image name="image" value="$image" zoom="true" zoomControl="true"/>',
+             '  <RectangleLabels name="label" toName="image">']
+    for i, lbl in enumerate(labels):
+        color = palette[i % len(palette)]
+        lines.append(f'    <Label value="{lbl}" background="{color}"/>')
+    lines += ['  </RectangleLabels>', '</View>']
+    return "\n".join(lines)
+
+
 LABEL_CONFIGS = {
-    "bbox": """<View>
-  <Image name="image" value="$image" zoom="true" zoomControl="true"/>
-  <RectangleLabels name="label" toName="image">
-    <Label value="animal"  background="#E74C3C"/>
-    <Label value="vehicle" background="#3498DB"/>
-    <Label value="person"  background="#2ECC71"/>
-  </RectangleLabels>
-</View>""",
+    "bbox": make_bbox_config(["animal"]),
     "polygon": """<View>
   <Image name="image" value="$image" zoom="true" zoomControl="true"/>
   <PolygonLabels name="label" toName="image" strokeWidth="2">
@@ -278,7 +290,8 @@ class LabelStudioProject:
     ) -> "LabelStudioProject":
         """Return the named project, creating it if it does not exist.
 
-        ``config`` is a key from :data:`LABEL_CONFIGS` (``"bbox"`` or ``"polygon"``).
+        ``config`` is either a key from :data:`LABEL_CONFIGS` (``"bbox"`` or
+        ``"polygon"``) or a raw Label Studio XML config string.
         """
         url = url.rstrip("/")
         r = session.get(f"{url}/api/projects")
@@ -288,9 +301,10 @@ class LabelStudioProject:
                 print(f"Using existing project '{title}' (id={p['id']})")
                 return cls(session, url, p["id"], title)
 
+        label_config = LABEL_CONFIGS[config] if config in LABEL_CONFIGS else config
         r = session.post(f"{url}/api/projects", json={
             "title": title,
-            "label_config": LABEL_CONFIGS[config],
+            "label_config": label_config,
         })
         r.raise_for_status()
         pid = r.json()["id"]
@@ -299,14 +313,37 @@ class LabelStudioProject:
 
     # ── Upload ─────────────────────────────────────────────────────────────────
 
+    def _existing_filenames(self) -> set:
+        """Return the set of image filenames already uploaded to this project."""
+        r = self.session.get(
+            f"{self.url}/api/tasks",
+            params={"project": self.id, "page_size": 10000},
+        )
+        r.raise_for_status()
+        resp = r.json()
+        task_list = resp.get("tasks", []) if isinstance(resp, dict) else resp
+        names: set = set()
+        for t in task_list:
+            fu = t.get("file_upload") or ""
+            img_url = t.get("data", {}).get("image", "")
+            # LS stores uploads as "<uuid>-<original_name>"; img_url ends with the name
+            if fu:
+                names.add(fu.split("/")[-1])   # keep "<uuid>-name.jpg" for endswith check
+            if img_url:
+                names.add(img_url.split("/")[-1])
+        return names
+
     def upload_with_megadetector(
         self,
         image_dir: Path,
         md_results: list,
         categories: dict = None,
+        species_map: dict = None,
         conf_threshold: float = 0.1,
     ) -> None:
         """Upload images and attach MegaDetector detections as pre-annotations.
+
+        Already-uploaded images are skipped, so re-running the cell is safe.
 
         Args:
             image_dir:       Directory that contains the image files.
@@ -314,19 +351,29 @@ class LabelStudioProject:
                              (``{"file": "name.jpg", "detections": [...]}``)
             categories:      Map from MegaDetector category id string to label name.
                              Defaults to ``{"1": "animal", "2": "person", "3": "vehicle"}``.
+            species_map:     Optional dict mapping filename → species name (e.g. from
+                             SpeciesNet). When provided, overrides the category label for
+                             animal detections (category "1") with the per-image species.
             conf_threshold:  Detections below this confidence are skipped.
         """
         if categories is None:
             categories = MD_CATEGORIES
         image_dir = Path(image_dir)
 
-        n_uploaded = n_annotated = 0
+        existing = self._existing_filenames()
+
+        n_uploaded = n_annotated = n_skipped = 0
         for result in md_results:
             img_path = image_dir / result["file"]
             if not img_path.exists():
                 continue
 
-            print(f"  {img_path.name}", end="", flush=True)
+            fname = img_path.name
+            if any(e.endswith(fname) for e in existing):
+                n_skipped += 1
+                continue
+
+            print(f"  {fname}", end="", flush=True)
             task = upload_image(self.session, self.url, self.id, img_path)
             n_uploaded += 1
 
@@ -341,6 +388,9 @@ class LabelStudioProject:
                     # MegaDetector bbox: [x, y, w, h] normalised 0–1
                     nx, ny, nw, nh = det["bbox"]
                     label = categories.get(str(det["category"]), "animal")
+                    # Override animal label with SpeciesNet species if available
+                    if species_map and str(det["category"]) == "1":
+                        label = species_map.get(fname, label)
                     ls_results.append(
                         coco_bbox_to_ls(
                             nx * img_w, ny * img_h, nw * img_w, nh * img_h,
@@ -353,18 +403,24 @@ class LabelStudioProject:
                     print(f"  → {len(ls_results)} detections", end="")
             print()
 
+        if n_skipped:
+            print(f"  ({n_skipped} already uploaded, skipped)")
         print(f"\nDone — {n_uploaded} uploaded, {n_annotated} with pre-annotations")
 
     # ── Export ─────────────────────────────────────────────────────────────────
 
-    def export(self, output_path: Path, fmt: str = "COCO") -> dict:
+    def export(self, output_path: Path, fmt: str = "COCO"):
         """Export annotations and save to ``output_path``.
 
-        Label Studio wraps COCO (and some other formats) in a ZIP archive.
-        This method unpacks the ZIP automatically and writes the JSON to
-        ``output_path``.
+        For JSON-based formats (``COCO``, ``JSON``):
+            Unpacks the ZIP if needed, writes a single ``.json`` file, and
+            returns the parsed dict.
 
-        Returns the parsed JSON (COCO dict or list of tasks).
+        For ``YOLO`` format:
+            Label Studio returns a ZIP with ``labels/*.txt`` and either
+            ``classes.txt`` or ``notes.json``.  The ZIP is extracted to
+            ``output_path`` (treated as a directory).  Returns the output
+            directory as a :class:`pathlib.Path`.
         """
         import io
         import zipfile
@@ -375,7 +431,27 @@ class LabelStudioProject:
         )
         r.raise_for_status()
 
-        # LS returns a ZIP when the export contains a single JSON file
+        # ── YOLO: extract ZIP to a directory ──────────────────────────────────
+        if fmt.upper() == "YOLO":
+            if r.content[:2] != b"PK":
+                raise RuntimeError("YOLO export did not return a ZIP archive.")
+            out_dir = Path(output_path)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
+                zf.extractall(out_dir)
+            n_labels = len(list((out_dir / "labels").glob("*.txt"))) if (out_dir / "labels").exists() else 0
+            if n_labels == 0:
+                stats = self.task_stats()
+                print(
+                    f"Warning: YOLO export contains 0 label files.\n"
+                    f"  Submitted tasks: {stats['completed']} / {stats['total']}\n"
+                    f"  Open {self.open_url()} and submit at least one task first."
+                )
+            else:
+                print(f"Exported '{self.title}': {n_labels} label files → {out_dir}")
+            return out_dir
+
+        # ── JSON-based formats (COCO, JSON, …) ────────────────────────────────
         if r.content[:2] == b"PK":
             with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
                 json_names = [n for n in zf.namelist() if n.endswith(".json")]
