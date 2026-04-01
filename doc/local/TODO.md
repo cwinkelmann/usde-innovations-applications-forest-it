@@ -10,10 +10,10 @@
 - [x] write installation instructions for each environment, including which practicals use which environment
 - [x] Describe how to run Label Studio for annotation practical
 - [ ] Setup Jupyter Hub for remote training
-[ ] There is this mention about the conversion of formats: Three common bounding box formats exist — you will convert between them in Practical 3:
+- [x] There is this mention about the conversion of formats: Three common bounding box formats exist — you will convert between them in Practical 3:
 
 ## Camera Trap Detection
-- [ ] Run the data inspection Notebook after the megadetector 
+- [x] Run the data inspection Notebook after the megadetector 
 
 ## Aerial Object Detection
 
@@ -24,7 +24,7 @@
 
 
 ## Add Excercises
-- [ ] discuss confidence reduction for small objects
+- [x] discuss confidence reduction for small objects
 - [x] look into fp and fn for small objects
 
 ###  Introduction to my work of tiny object detection in aerial images in the Iguanas from Above Project
@@ -41,8 +41,8 @@
 ## Wrapup
 - [ ] How to appraoch the problem of object detection in general -  https://universe.roboflow.com/search?q=class%3Apuffin
 - [ ] Diagram of the process
-- [ ] of the repository structure
-- [ ] fix species Net
+- [x] of the repository structure
+- [x] fix species Net
 
 ### Short presentation
-- [ ] short slide deck to show the results of the tiny object detection in aerial images in the Iguanas from Above Project, and to introduce the problem of tiny object detection in aerial images more generally.
+- [x] short slide deck to show the results of the tiny object detection in aerial images in the Iguanas from Above Project, and to introduce the problem of tiny object detection in aerial images more generally.
