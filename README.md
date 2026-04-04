@@ -53,18 +53,20 @@ Or download the ZIP from GitHub and extract it.
 This course uses **two separate Python environments** to keep dependencies clean.
 Start with the lightweight `fit-megadetector` environment and install the others when needed.
 
-You need ~10 GB free disk space for both environments and datasets.
+You need ~20 GB free disk space for both environments and datasets.
 
 Choose **Option A (conda)** or **Option B (virtualenv)** below.
 ---
 
 ### Option A — Conda (recommended, especially on Windows)
 
+
 Conda handles binary dependencies like GDAL automatically, which is why it is the default.
 Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) if you do not have it yet.
+When you install conda, don't put it into a folder with a space, like "Conda Folder", after installing, start the conda prompt. You might need to install git as well: https://git-scm.com/install/windows
 
-#### 1 — `fit-megadetector` (Practicals P00–P03, data exploration)
-
+#### 1 — `fit-megadetector` (Practicals P00)
+This is the hello world environment. You will not really need it. Only if you want the pure megadetector package.
 ```bash
 conda env create -f environment-megadetector.yml
 conda activate fit-megadetector
@@ -78,7 +80,7 @@ python -c "import wildlife_detection; print('fit-megadetector OK')"
 
 ```
 
-#### 2 — `fit-training` (Practicals P04–P08, YOLO + SAHI + classifiers)
+#### 2 — `fit-training` (Practicals P01–P08, YOLO + SAHI + classifiers)
 
 ```bash
 conda env create -f environment-training.yml
@@ -109,7 +111,7 @@ where Conda is not set up, or are running on Google Colab.
 > On Windows, GDAL is easiest via Conda (Option A) — the virtualenv path is not recommended for P06+.
 
 #### 1 — `fit-megadetector` equivalent
-
+Like above: this is only the hellor world environment. All realy practives use fit-training.
 ```bash
 python -m venv .venv-megadetector
 python3 -m venv --clear .venv-megadetector
@@ -121,7 +123,7 @@ pip install -e ".[megadetector,dev]"
 ```bash
 python -m venv .venv-training
 python3 -m .venv-training/bin/activate
-pip install -e ".[training,dev,herdnet,labelstudio]"
+pip install -e ".[training,dev,labelstudio]"
 ```
 
 
@@ -129,7 +131,8 @@ pip install -e ".[training,dev,herdnet,labelstudio]"
 #### Google Colab
 
 Each notebook can be opened in Colab via the badge in the practicals table below.
-The first cell in each notebook installs all required dependencies:
+The first cell in each notebook installs all required dependencies, you only have to uncomment them.
+Colab itself works fine, but since notebooks are not synced and cannot start external applications, using data from other notebooks or starting label-studio does not work.
 
 ```bash
 # Run this in Colab before anything else
@@ -141,7 +144,7 @@ The first cell in each notebook installs all required dependencies:
 
 
 
-### First run check
+### First Hello-World run check
 
 Open [practical_00_megadetector_legacy.ipynb](week1/practicals/practical_00_megadetector_legacy.ipynb)
 in JupyterLab and run it top to bottom. If MegaDetector downloads a checkpoint and produces detections,
