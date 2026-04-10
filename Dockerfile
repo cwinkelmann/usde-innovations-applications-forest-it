@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     libglib2.0-0 \
-    libgl1-mesa-glx \
+    libgl1 \
     libsm6 \
     libxext6 \
     && rm -rf /var/lib/apt/lists/*

@@ -3,6 +3,8 @@ Course Materials for the Innovations and Applications of Forest IT (FIT) Module,
 
 A practical course on automated wildlife monitoring using drone imagery, camera traps, and deep learning.
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cwinkelmann/usde-innovations-applications-forest-it/jupyter_hub?urlpath=%2Fdoc%2Ftree%2Fweek1%2Fpracticals%2Fpractical_01_visual_wildlife_datasets.ipynb)
+
 ---
 
 ## Intro
