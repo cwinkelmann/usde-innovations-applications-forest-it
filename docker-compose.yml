@@ -7,38 +7,38 @@ services:
       args:
         user_id: "${UID:-1000}"
     volumes:
-      # Bind-mount the repo so notebooks edited locally are visible immediately.
-      # Installed packages live inside the image, not here — source changes need
-      # a rebuild.
       - type: bind
         source: .
         target: /home/student/course
-
-      # Persist downloaded model weights and datasets across container restarts
       - type: volume
         source: week1_data
         target: /home/student/course/week1/data
-
-      # Shell history inside the container (create the file first if missing:
-      #   touch ~/.docker_bash_history)
       - type: bind
         source: "${HOME}/.docker_bash_history"
         target: /home/student/.bash_history
-
-      # Share git identity so commits from inside the container have an author
       - type: bind
         source: "${HOME}/.gitconfig"
         target: /home/student/.gitconfig
         read_only: true
-
     ports:
       - "127.0.0.1:8888:8888"
-
     environment:
       - PYTHONUNBUFFERED=1
-      # Uncomment to enable W&B logging in practicals:
       # - WANDB_API_KEY=${WANDB_API_KEY}
       # - WANDB_PROJECT=${WANDB_PROJECT:-fit-course}
 
+  label-studio:
+    image: humansignal/label-studio:latest
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - type: volume
+        source: label_studio_data
+        target: /label-studio/data
+    environment:
+      - LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true
+      - LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/data/media
+
 volumes:
   week1_data:
+  label_studio_data:
