@@ -1,0 +1,38 @@
+# Version control
+.git/
+.github/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments (host conda envs must not leak in)
+.venv/
+envs/
+
+# Large data and model artefacts
+week1/data/
+week2/data/
+data/
+weights/
+wandb/
+output/
+runs/
+*.pt
+*.pth
+*.onnx
+
+# IDE / editor noise
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Course development files not needed in the image
+doc/
+configs/
+jupyter_hub_template/
+*.pptx

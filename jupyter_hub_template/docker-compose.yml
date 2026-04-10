@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  jupyterlab:
+    build: .
+    volumes:
+      - type: bind
+        source: .
+        target: /home/joe/project
+      #
+      - type: volume
+        target: /home/joe/project/data/models/
+      # to use environment from docker and not local
+      - type: volume
+        target: /home/joe/project/.venv
+      # to get shell history
+      - type: bind
+        source: ~/.docker_bash_history
+        target: /home/joe/.bash_history
+      # to get git config
+      - type: bind
+        source: ~/.gitconfig
+        target: /home/joe/.gitconfig
+      # to get jupiter config
+      - type: bind
+        source: ~/.jupyter
+        target: /home/joe/.jupyter
+    ports:
+      - 127.0.0.1:8888:8888/tcp
+    environment:
+      # go through proxy to access the dashboard which needs no SSH tunneling
+      # or similar (see https://jobqueue.dask.org/en/latest/interactive.html)
+      - DASK_DISTRIBUTED__DASHBOARD__LINK=/proxy/{port}/status
+    command: [jupyter, lab, --ip=0.0.0.0]
