@@ -34,6 +34,12 @@ conda deactivate
 conda env remove -n fit-megadetector -y
 ```
 
+
+```bash
+pip install -e ".[megadetector,dev]"
+```
+
+
 ```bash
 python -c "
 import megadetector
@@ -46,7 +52,7 @@ Run the notebooks
 jupyter lab 
 ```
 
-Verify, run the notebook practical_3_megadetector_legacy.ipynb, and check that the MegaDetector model downloads and runs:
+Verify, run the notebook [practical_00_megadetector_legacy.ipynb], and check that the MegaDetector model downloads and runs:
 
 ---
 

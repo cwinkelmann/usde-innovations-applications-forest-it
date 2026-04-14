@@ -1,0 +1,19 @@
+# fit-webapp — Environment for the Docker webapp (NiceGUI + MD + SpeciesNet).
+#
+# Extends the fit-training stack with NiceGUI for the browser UI.
+# Install:
+#   micromamba create -f environment-webapp.yml
+#   micromamba activate fit-webapp
+
+name: fit-webapp
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip
+
+  - pip:
+      - -e ".[training]"
+      - nicegui>=1.4

@@ -22,4 +22,4 @@ dependencies:
   - pip
 
   - pip:
-      - -e ".[megadetector,dev]"
+      - -e ".[megadetector,dev]" # pip install -e ".[megadetector,dev]"
