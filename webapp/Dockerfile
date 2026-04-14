@@ -21,16 +21,25 @@ FROM ${MAMBA_IMAGE}
 USER root
 RUN mkdir -p /app /data
 
+# Runtime libs for OpenCV (pulled in by ultralytics → cv2):
+#   libgl1          → libGL.so.1
+#   libglib2.0-0    → libgobject-2.0.so.0
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY pyproject.toml /app/pyproject.toml
 COPY src /app/src
 COPY webapp/environment-webapp.yml /app/environment-webapp.yml
-COPY webapp/app /app/webapp/app
 
 # Build the env as root. micromamba's entrypoint reads ENV_NAME to activate.
 RUN micromamba create -y -n fit-webapp -f /app/environment-webapp.yml \
     && micromamba clean --all --yes
+
+COPY webapp/app /app/webapp/app
+
 
 # Ensure we stay as root at runtime (mambaorg/micromamba defaults to mambauser).
 USER root

@@ -119,9 +119,15 @@ def render(jm: JobManager) -> None:
             on_click=lambda: session_select.set_options(list_sessions()),
         ).props("flat")
 
-        conf = ui.number(
-            "Confidence", value=0.2, min=0.01, max=1.0, step=0.05, format="%.2f"
-        ).classes("w-32")
+        with ui.row().classes("items-center gap-3 w-full"):
+            ui.label("Confidence").classes("text-sm w-24")
+            conf = ui.slider(min=0.05, max=0.95, step=0.05, value=0.2).classes(
+                "w-64"
+            )
+            # Live value readout — binds the label to whatever conf currently is.
+            ui.label().bind_text_from(
+                conf, "value", lambda v: f"{float(v):.2f}"
+            ).classes("w-10 font-mono text-sm")
         imgsz = ui.number("Image size", value=1280, min=320, max=4096, step=64).classes(
             "w-32"
         )
@@ -135,6 +141,10 @@ def render(jm: JobManager) -> None:
         job_id_ref: dict = {"id": None}
         poll_timer: dict = {"t": None}
         gallery_container = ui.column().classes("w-full mt-4")
+        # Holder for the gallery's "currently filtered filenames" callable.
+        # Updated on each render; consulted at export time so only images the
+        # user actually sees are pushed to Label Studio.
+        gallery_filter: dict = {"fn": None}
 
         def poll() -> None:
             jid = job_id_ref["id"]
@@ -143,7 +153,16 @@ def render(jm: JobManager) -> None:
             s = jm.get_status(jid)
             state = s.get("state", "unknown")
             progress.value = float(s.get("progress", 0.0))
-            status_label.text = f"{state} ({s.get('worker', '-')})"
+            worker = s.get("worker", "-")
+            stage = s.get("stage")
+            processed = s.get("processed")
+            total = s.get("total")
+            if state == "running" and stage and processed is not None and total:
+                status_label.text = (
+                    f"{stage}: {processed} / {total} images ({worker})"
+                )
+            else:
+                status_label.text = f"{state} ({worker})"
             if state in ("done", "error"):
                 if poll_timer["t"]:
                     poll_timer["t"].deactivate()
@@ -157,7 +176,7 @@ def render(jm: JobManager) -> None:
                         f"Output: `{out_dir}`"
                     )
                     if det_path.exists():
-                        render_gallery(gallery_container, det_path)
+                        gallery_filter["fn"] = render_gallery(gallery_container, det_path)
                 else:
                     result_area.content = f"**Error:** {s.get('error', 'unknown')}"
 
@@ -215,7 +234,18 @@ def render(jm: JobManager) -> None:
 
             async def _run_export(session: str, project: str) -> None:
                 det_path = _md_results_for(session)
-                ls_status.text = f"Exporting to {project}..."
+                # Snapshot the gallery filter at click time; if no gallery is
+                # rendered (pre-run, or load failed) we fall through with None
+                # which means "no filter — export everything".
+                allowlist = (
+                    gallery_filter["fn"]() if gallery_filter["fn"] else None
+                )
+                if allowlist is not None:
+                    ls_status.text = (
+                        f"Exporting {len(allowlist)} filtered image(s) to {project}..."
+                    )
+                else:
+                    ls_status.text = f"Exporting to {project}..."
                 try:
                     link = await run.io_bound(
                         export_session,
@@ -224,6 +254,8 @@ def render(jm: JobManager) -> None:
                         project,
                         UPLOADS_DIR / session,
                         det_path,
+                        None,            # species_map — unused on MD tab
+                        allowlist,       # file_allowlist
                     )
                     _mark_exported(session, project, link)
                     ls_status.text = f"Exported → {link}"
@@ -469,8 +501,9 @@ def render(jm: JobManager) -> None:
                     f"**Previous run** loaded from `{det_path}`. "
                     f"Run again to overwrite."
                 )
-                render_gallery(gallery_container, det_path)
+                gallery_filter["fn"] = render_gallery(gallery_container, det_path)
             else:
+                gallery_filter["fn"] = None
                 result_area.content = ""
 
         session_select.on_value_change(lambda _e: load_existing(session_select.value))

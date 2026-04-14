@@ -18,7 +18,7 @@ Person / vehicle boxes are skipped because SpeciesNet classifies animals.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 
 def _parse_taxonomy(label: str) -> dict[str, str]:
@@ -66,16 +66,28 @@ class SpeciesNetClassifier:
         country: str | None = None,
         batch_size: int = 8,
         chunk: int = 50,
+        progress_cb: Callable[[int, int], None] | None = None,
     ) -> list[dict]:
         """Classify in chunks of ``chunk`` images so RAM usage stays bounded
-        even when a session has thousands of images with animal detections."""
+        even when a session has thousands of images with animal detections.
+
+        ``progress_cb(processed, total)`` fires after each chunk. ``total`` is
+        the number of *images with at least one animal detection* — not the
+        full session size, since images with no animals are never classified.
+        """
         filepaths, detections_dict = self._build_inputs(md_results)
+        total = len(filepaths)
         if not filepaths:
+            if progress_cb:
+                progress_cb(0, 0)
             return [{**r, "species": []} for r in md_results]
+
+        if progress_cb:
+            progress_cb(0, total)
 
         preds_by_file: dict[str, list[dict]] = {}
 
-        for start in range(0, len(filepaths), chunk):
+        for start in range(0, total, chunk):
             sub = filepaths[start : start + chunk]
             sub_dict = {fp: detections_dict[fp] for fp in sub}
             kwargs: dict[str, Any] = {
@@ -104,6 +116,8 @@ class SpeciesNetClassifier:
 
             del raw
             self._release_memory()
+            if progress_cb:
+                progress_cb(min(start + chunk, total), total)
 
         return [{**r, "species": preds_by_file.get(r["file"], [])} for r in md_results]
 

@@ -14,6 +14,8 @@ DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
 UPLOADS_DIR = DATA_DIR / "uploads"
 OUTPUTS_DIR = DATA_DIR / "outputs"
 MODEL_CACHE_DIR = DATA_DIR / "model_cache"
+# Derived JPEG thumbnails mirror the uploads tree; safe to delete & regenerate.
+THUMBS_DIR = DATA_DIR / "thumbs"
 
 MD_WEIGHTS = os.environ.get("MD_WEIGHTS", "md_v1000.0.0-larch.pt")
 SPECIESNET_MODEL = os.environ.get(
@@ -61,17 +63,23 @@ def resolve_num_workers() -> int:
 
 
 def resolve_batch_size(device: str | None = None) -> int:
-    """Sensible per-device default.
+    """Resolve the inference batch size for ``device``.
 
-    - cuda: 16 (plenty of VRAM on modern GPUs, makes throughput usable)
-    - mps:  2  (Metal runs OOM / stalls at larger batches on most Macs)
-    - cpu:  8  (moderate; big batches don't help on CPU)
+    Precedence (highest first):
+      1. ``BATCH_SIZE`` env var — applies to every device. Useful for
+         one-off overrides without editing the per-device defaults.
+      2. ``BATCH_SIZE_CUDA`` / ``BATCH_SIZE_MPS`` / ``BATCH_SIZE_CPU``
+         env vars — per-device knobs, the normal way to tune.
+      3. Hard-coded fallbacks (cuda=16, mps=2, cpu=8) if nothing is set.
     """
     override = os.environ.get("BATCH_SIZE")
     if override:
         return max(1, int(override))
     if device is None:
         device = resolve_device()
+    per_device = os.environ.get(f"BATCH_SIZE_{device.upper()}")
+    if per_device:
+        return max(1, int(per_device))
     if device == "cuda":
         return 16
     if device == "mps":
@@ -80,5 +88,5 @@ def resolve_batch_size(device: str | None = None) -> int:
 
 
 def ensure_dirs() -> None:
-    for d in (UPLOADS_DIR, OUTPUTS_DIR, MODEL_CACHE_DIR):
+    for d in (UPLOADS_DIR, OUTPUTS_DIR, MODEL_CACHE_DIR, THUMBS_DIR):
         d.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,21 @@
+# GPU overlay for docker-compose.yml.
+#
+# Applied on top of the base compose with:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Requires the NVIDIA Container Toolkit on the host. For rootless Docker,
+# set `no-cgroups = true` in /etc/nvidia-container-runtime/config.toml.
+#
+# On macOS this file does nothing useful — Docker Desktop has no Metal
+# access, so use the app's native (non-container) install for MPS.
+
+services:
+  webapp:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

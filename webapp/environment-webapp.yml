@@ -13,7 +13,17 @@ channels:
 dependencies:
   - python=3.11
   - pip
+  # SpeciesNet (and some transitively-imported TF tooling) still uses the
+  # legacy `pkg_resources` API, which lives inside setuptools. Modern Python
+  # envs no longer ship setuptools by default; install it explicitly.
+  - setuptools
 
   - pip:
+      # Pull torch/torchvision from the cu121 index (matches host driver 535.x,
+      # CUDA 12.2 ceiling). Without this, pip resolves against PyPI and may pick
+      # a cu128-tagged wheel that needs driver ≥ 570.
+      - --extra-index-url https://download.pytorch.org/whl/cu121
+      - torch==2.4.1
+      - torchvision==0.19.1
       - -e ".[training]"
       - nicegui>=1.4

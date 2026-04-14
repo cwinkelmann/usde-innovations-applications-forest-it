@@ -30,19 +30,28 @@ mkdir -p "$(grep HOST_DATA_DIR webapp/.env | cut -d= -f2)"
 
 ## Run
 
+Base compose runs CPU-only. Add the `gpu` overlay on NVIDIA Linux hosts.
+
 ```bash
 cd webapp
-docker compose up --build       # webapp on :8080, Label Studio on :8081
+
+# macOS, or Linux without NVIDIA toolkit:
+docker compose up --build -d
+
+# Linux with NVIDIA Container Toolkit:
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
 ```
 
 - Webapp: http://localhost:8080
 - Label Studio: http://localhost:8081 (create an account, copy the API token into the webapp's LS card, click **Save URL + token**)
 
-## Multi-GPU
+## GPU support
 
-The compose file declares `deploy.resources.reservations.devices` for all NVIDIA GPUs. The app calls `torch.cuda.device_count()` at startup and spawns one worker per visible GPU, each pinned via `CUDA_VISIBLE_DEVICES`. Override worker count with `NUM_WORKERS=N` in `.env`.
+The GPU overlay (`docker-compose.gpu.yml`) declares `deploy.resources.reservations.devices` for all NVIDIA GPUs. The app calls `torch.cuda.device_count()` at startup and spawns one worker per visible GPU, each pinned via `CUDA_VISIBLE_DEVICES`. Override worker count with `NUM_WORKERS=N` in `.env`.
 
-Without GPUs the reservation is ignored — the app falls back to MPS on macOS (via Docker Desktop's Metal pass-through, if available) or CPU.
+- **Why it's an overlay, not the default:** before this split, Docker errored out on machines without the NVIDIA runtime (`could not select device driver "nvidia"`). The base compose is now portable; students with GPUs opt in explicitly.
+- **macOS / MPS:** Docker Desktop runs containers inside a Linux VM with no Metal access — **MPS is not reachable inside the container**, regardless of compose flags. To use MPS on Mac, run the app natively (see *Dev (no Docker)* below).
+- **Rootless Docker + NVIDIA:** also requires `no-cgroups = true` in `/etc/nvidia-container-runtime/config.toml`.
 
 ## Dev (no Docker)
 
@@ -77,3 +86,5 @@ Short version: rootless Docker already isolates the process from the host
 root account; trying to further drop privileges *inside* the container just
 breaks the bind-mount. If you're running rootful Docker in production and
 want non-root, pass `--user $(id -u):$(id -g)` to compose.
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6ODA4MzM3Mzk3MCwiaWF0IjoxNzc2MTczOTcwLCJqdGkiOiJiN2UwNzNiMmEzMDk0NWE3OTFjNGFmZmQzMzg4NjZiYyIsInVzZXJfaWQiOiIxIn0.fadrgVhR9AqdJf0My-l0wYIhHaqLTn8TDIBm0QYidJQ

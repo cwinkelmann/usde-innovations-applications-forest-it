@@ -8,11 +8,19 @@
 # directory is created if missing. On macOS with the example setup, this is
 # /Volumes/storage/_tmp/usde.
 #
-# Multi-GPU: leave `deploy.resources.reservations.devices` as-is. In rootless
-# Docker + NVIDIA, the nvidia-container-toolkit must be configured with
-# `no-cgroups = true` in /etc/nvidia-container-runtime/config.toml. Without a
-# GPU present the reservation is simply ignored — the app falls back to MPS
-# (macOS) or CPU automatically.
+# GPU usage:
+#   CPU-only (Mac, Linux without NVIDIA toolkit):
+#     docker compose up -d
+#   NVIDIA GPUs (Linux with nvidia-container-toolkit):
+#     docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# macOS note: Docker Desktop runs containers in a Linux VM with no Metal
+# access, so MPS is *not* available inside the container regardless of
+# compose flags — the webapp falls back to CPU. For MPS, run the app
+# natively on the Mac (micromamba env) instead of via Docker.
+#
+# Rootless Docker + NVIDIA also requires `no-cgroups = true` in
+# /etc/nvidia-container-runtime/config.toml.
 
 services:
   webapp:
@@ -27,7 +35,12 @@ services:
     environment:
       DATA_DIR: /data
       NUM_WORKERS: "${NUM_WORKERS:-auto}"
+      # Per-device batch sizes — see resolve_batch_size() in app/config.py.
+      # BATCH_SIZE (no suffix) overrides the per-device entries when set.
       BATCH_SIZE: "${BATCH_SIZE:-}"
+      BATCH_SIZE_CUDA: "${BATCH_SIZE_CUDA:-16}"
+      BATCH_SIZE_MPS: "${BATCH_SIZE_MPS:-2}"
+      BATCH_SIZE_CPU: "${BATCH_SIZE_CPU:-8}"
       DEVICE: "${DEVICE:-auto}"
       MD_WEIGHTS: "${MD_WEIGHTS:-md_v1000.0.0-larch.pt}"
       SPECIESNET_MODEL: "${SPECIESNET_MODEL:-kaggle:google/speciesnet/pyTorch/v4.0.2a/1}"
@@ -39,13 +52,6 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ${HOST_DATA_DIR:-./_data}:/data
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   labelstudio:
     image: heartexlabs/label-studio:latest

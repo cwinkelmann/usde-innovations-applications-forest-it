@@ -75,14 +75,30 @@ def worker_main(gpu_idx: int, device: str, job_queue, status_queue) -> None:
             out_dir = OUTPUTS_DIR / job["session"] / mode_key
             out_dir.mkdir(parents=True, exist_ok=True)
 
+            # Progress cap for MD: 1.0 for MD-only runs, 0.5 for combined
+            # runs (SpeciesNet claims the second half of the bar).
+            md_cap = 0.5 if job["mode"] == "md+speciesnet" else 1.0
+
+            def md_progress(processed: int, total: int) -> None:
+                frac = processed / max(1, total)
+                _set_status(
+                    status_queue,
+                    job_id,
+                    stage="MegaDetector",
+                    processed=processed,
+                    total=total,
+                    progress=frac * md_cap,
+                )
+
             md_results = md.predict(
                 images,
                 conf=job.get("conf", 0.2),
                 imgsz=job.get("imgsz", 1280),
                 batch=job.get("batch", default_batch),
+                progress_cb=md_progress,
             )
             (out_dir / "detections.json").write_text(json.dumps(md_results, indent=2))
-            _set_status(status_queue, job_id, progress=0.5)
+            _set_status(status_queue, job_id, progress=md_cap)
 
             result_payload = {
                 "mode": job["mode"],
@@ -95,10 +111,23 @@ def worker_main(gpu_idx: int, device: str, job_queue, status_queue) -> None:
                     from .detectors.speciesnet import SpeciesNetClassifier
 
                     snet = SpeciesNetClassifier(SPECIESNET_MODEL)
+
+                def snet_progress(processed: int, total: int) -> None:
+                    frac = processed / max(1, total)
+                    _set_status(
+                        status_queue,
+                        job_id,
+                        stage="SpeciesNet",
+                        processed=processed,
+                        total=total,
+                        progress=0.5 + frac * 0.5,
+                    )
+
                 merged = snet.predict(
                     md_results,
                     country=job.get("country"),
                     batch_size=job.get("batch", default_batch),
+                    progress_cb=snet_progress,
                 )
                 (out_dir / "predictions.json").write_text(json.dumps(merged, indent=2))
 

@@ -122,11 +122,21 @@ def render(jm: JobManager) -> None:
             on_click=lambda: session_select.set_options(list_sessions()),
         ).props("flat")
 
-        conf = ui.number(
-            "MD confidence", value=0.2, min=0.01, max=1.0, step=0.05, format="%.2f"
-        ).classes("w-32")
+        with ui.row().classes("items-center gap-3 w-full"):
+            ui.label("MD confidence").classes("text-sm w-32")
+            conf = ui.slider(min=0.05, max=0.95, step=0.05, value=0.2).classes(
+                "w-64"
+            )
+            ui.label().bind_text_from(
+                conf, "value", lambda v: f"{float(v):.2f}"
+            ).classes("w-10 font-mono text-sm")
         country = ui.select(
-            options={"": "(none / global)", "DEU": "DEU — Germany", "TZA": "TZA — Tanzania"},
+            options={
+                "": "(none / global)",
+                "DEU": "DEU — Germany",
+                "SWE": "SWE — Sweden",
+                "TZA": "TZA — Tanzania",
+            },
             value="",
             label="Country (SpeciesNet geofence)",
         ).classes("w-64")
@@ -138,6 +148,9 @@ def render(jm: JobManager) -> None:
         job_id_ref: dict = {"id": None}
         poll_timer: dict = {"t": None}
         gallery_container = ui.column().classes("w-full mt-4")
+        # See megadetector.py — holds the gallery's current-filter callable so
+        # the LS export can honour the user's filter selection.
+        gallery_filter: dict = {"fn": None}
 
         def poll() -> None:
             jid = job_id_ref["id"]
@@ -146,7 +159,16 @@ def render(jm: JobManager) -> None:
             s = jm.get_status(jid)
             state = s.get("state", "unknown")
             progress.value = float(s.get("progress", 0.0))
-            status_label.text = f"{state} ({s.get('worker', '-')})"
+            worker = s.get("worker", "-")
+            stage = s.get("stage")
+            processed = s.get("processed")
+            total = s.get("total")
+            if state == "running" and stage and processed is not None and total:
+                status_label.text = (
+                    f"{stage}: {processed} / {total} images ({worker})"
+                )
+            else:
+                status_label.text = f"{state} ({worker})"
             if state in ("done", "error"):
                 if poll_timer["t"]:
                     poll_timer["t"].deactivate()
@@ -160,7 +182,7 @@ def render(jm: JobManager) -> None:
                         f"Output: `{out_dir}`"
                     )
                     if pred_path.exists():
-                        render_gallery(gallery_container, pred_path)
+                        gallery_filter["fn"] = render_gallery(gallery_container, pred_path)
                 else:
                     result_area.content = f"**Error:** {s.get('error', 'unknown')}"
 
@@ -217,8 +239,17 @@ def render(jm: JobManager) -> None:
             async def _run_export(session: str, project: str) -> None:
                 pred_path = _results_for(session)
                 species_map = build_species_map(pred_path)
+                allowlist = (
+                    gallery_filter["fn"]() if gallery_filter["fn"] else None
+                )
+                scope = (
+                    f"{len(allowlist)} filtered image(s)"
+                    if allowlist is not None
+                    else "all images"
+                )
                 ls_status.text = (
-                    f"Exporting to {project} with {len(set(species_map.values()))} species labels..."
+                    f"Exporting {scope} to {project} with "
+                    f"{len(set(species_map.values()))} species labels..."
                 )
                 try:
                     link = await run.io_bound(
@@ -229,6 +260,7 @@ def render(jm: JobManager) -> None:
                         UPLOADS_DIR / session,
                         pred_path,
                         species_map,
+                        allowlist,
                     )
                     _mark_exported(session, project, link)
                     ls_status.text = f"Exported → {link}"
@@ -450,8 +482,9 @@ def render(jm: JobManager) -> None:
                 result_area.content = (
                     f"**Previous run** loaded from `{pred_path}`. Run again to overwrite."
                 )
-                render_gallery(gallery_container, pred_path)
+                gallery_filter["fn"] = render_gallery(gallery_container, pred_path)
             else:
+                gallery_filter["fn"] = None
                 result_area.content = ""
 
         session_select.on_value_change(lambda _e: load_existing(session_select.value))

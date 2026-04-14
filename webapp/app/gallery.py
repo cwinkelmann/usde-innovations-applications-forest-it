@@ -3,16 +3,21 @@
 Reads a `detections.json` written by the worker, renders a stats summary, a
 class filter, and a paginated grid of thumbnails with CSS-overlaid bounding
 boxes. Clicking a thumbnail opens a modal with the full-res image.
+
+`render_gallery` returns a ``current_filenames()`` callable so downstream
+callers (e.g. Label Studio export) can act on the same filter the user sees.
 """
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 from nicegui import ui
 
-from .config import UPLOADS_DIR
+from .config import THUMBS_DIR, UPLOADS_DIR
+from .thumbs import thumb_path_for
 
 CLASS_COLORS = {
     "animal": "#16a34a",
@@ -29,6 +34,23 @@ def _file_to_url(file: str) -> str:
         return f"/uploads/{p.relative_to(UPLOADS_DIR).as_posix()}"
     except ValueError:
         return file
+
+
+def _thumb_url(file: str) -> str:
+    """URL for the thumbnail grid. Falls back to the full-res upload if the
+    thumbnail doesn't exist (e.g. legacy sessions). Bounding boxes overlay
+    correctly either way — they're positioned as percentages of the image's
+    original pixel dimensions, which Pillow's aspect-preserving thumbnail
+    inherits.
+    """
+    p = Path(file)
+    try:
+        tp = thumb_path_for(p)
+    except ValueError:
+        return _file_to_url(file)
+    if tp.exists():
+        return f"/thumbs/{tp.relative_to(THUMBS_DIR).as_posix()}"
+    return _file_to_url(file)
 
 
 def _img_tag(url: str, extra_style: str = "") -> None:
@@ -128,14 +150,24 @@ def _render_stats(stats: dict) -> None:
 class _State:
     page: int
     per_page: int
-    animal: bool
-    person: bool
-    vehicle: bool
-    show_empty: bool
+    animal: bool = True
+    person: bool = True
+    vehicle: bool = True
+    show_empty: bool = True
+    # Populated at render time when the data has SpeciesNet output; otherwise
+    # unused. In species mode the "animal" checkbox is replaced by this set
+    # and the top per-image species drives inclusion.
+    species_selected: set[str] = field(default_factory=set)
 
     def selected_classes(self) -> set[str]:
+        """Classes passed to _draw_boxes — determines which overlays to draw.
+
+        In species mode, the presence of any selected species implies that
+        animal boxes should still be rendered (the species filter narrows
+        *which images* appear, not which boxes within them).
+        """
         s: set[str] = set()
-        if self.animal:
+        if self.animal or self.species_selected:
             s.add("animal")
         if self.person:
             s.add("person")
@@ -144,24 +176,70 @@ class _State:
         return s
 
 
-def render_gallery(container: ui.element, detections_path: Path) -> None:
-    """Render the gallery into `container`. Safe to call repeatedly."""
+def render_gallery(
+    container: ui.element, detections_path: Path
+) -> Callable[[], set[str]]:
+    """Render the gallery into `container`. Safe to call repeatedly.
+
+    Returns a ``current_filenames()`` callable that yields the basenames of
+    images matching the gallery's *current* filter state. Captures the local
+    `_State` in its closure, so each call to ``render_gallery`` produces a
+    fresh callable bound to its own gallery instance.
+    """
     data: list[dict] = json.loads(Path(detections_path).read_text())
     stats = _compute_stats(data)
-    state = _State(
-        page=0, per_page=PER_PAGE, animal=True, person=True, vehicle=True, show_empty=True
+
+    # SpeciesNet results carry a `species` list on each item (ranked
+    # predictions). Switch the filter UI to species mode when any item has it.
+    has_species = any(item.get("species") for item in data)
+    all_species: list[str] = sorted(
+        {
+            item["species"][0]["common_name"]
+            for item in data
+            if item.get("species")
+        }
     )
 
+    state = _State(page=0, per_page=PER_PAGE)
+    if has_species:
+        # Default: all species selected (no filter).
+        state.species_selected = set(all_species)
+
+    def _top_species(item: dict) -> str | None:
+        sp = item.get("species") or []
+        return sp[0].get("common_name") if sp else None
+
     def apply_filter() -> list[dict]:
-        selected = state.selected_classes()
         out: list[dict] = []
         for item in data:
-            classes = {d["label"] for d in item.get("detections", [])}
+            dets = item.get("detections", [])
+            classes = {d["label"] for d in dets}
             if not classes:
                 if state.show_empty:
                     out.append(item)
                 continue
-            if classes & selected:
+
+            include = False
+            # Animal path: filter by selected species if we're in species mode.
+            if "animal" in classes:
+                if has_species:
+                    top = _top_species(item)
+                    if top and top in state.species_selected:
+                        include = True
+                    elif not item.get("species") and state.animal:
+                        # Animal detection without any SpeciesNet prediction —
+                        # fall back to the plain "animal" checkbox so these
+                        # don't become invisible in species mode.
+                        include = True
+                else:
+                    if state.animal:
+                        include = True
+            # Person / vehicle / mixed-class images: each class's own checkbox.
+            if not include and "person" in classes and state.person:
+                include = True
+            if not include and "vehicle" in classes and state.vehicle:
+                include = True
+            if include:
                 out.append(item)
         return out
 
@@ -205,7 +283,7 @@ def render_gallery(container: ui.element, detections_path: Path) -> None:
         dialog.open()
 
     def thumb(item: dict) -> None:
-        url = _file_to_url(item["file"])
+        url = _thumb_url(item["file"])
         with ui.element("div").classes(
             "relative inline-block cursor-pointer"
         ).style("width:200px;"):
@@ -227,7 +305,7 @@ def render_gallery(container: ui.element, detections_path: Path) -> None:
         with container:
             _render_stats(stats)
 
-            with ui.row().classes("items-center gap-4 w-full"):
+            with ui.row().classes("items-center gap-4 w-full flex-wrap"):
                 ui.label("Filter:").classes("text-sm font-semibold")
 
                 def _tick(attr: str):
@@ -237,7 +315,58 @@ def render_gallery(container: ui.element, detections_path: Path) -> None:
                         rerender()
                     return handler
 
-                for cls in ("animal", "person", "vehicle"):
+                # Species multi-select replaces the "animal" checkbox when
+                # SpeciesNet predictions are present. `use-chips` renders
+                # each selection as a chip with an inline remove button.
+                if has_species:
+                    def on_species_change(e) -> None:
+                        state.species_selected = set(e.value or [])
+                        state.page = 0
+                        rerender()
+
+                    def _set_species_all(selected: set[str]) -> None:
+                        state.species_selected = selected
+                        state.page = 0
+                        rerender()
+
+                    with ui.element("div").classes("flex items-center gap-1"):
+                        color = CLASS_COLORS["animal"]
+                        ui.element("div").style(
+                            f"width:12px;height:12px;background:{color};border-radius:2px;"
+                        )
+                        (
+                            ui.select(
+                                options=all_species,
+                                value=sorted(state.species_selected),
+                                multiple=True,
+                                label=f"Species ({len(all_species)})",
+                            )
+                            .props("use-chips outlined dense options-dense")
+                            .classes("min-w-[260px]")
+                            .on_value_change(on_species_change)
+                        )
+                        # Bulk-select helpers: quickly swap between "all"
+                        # (inspect everything) and "none" (start from a
+                        # clean slate, then tick only the species you want
+                        # to keep — useful with 20+ species).
+                        ui.button(
+                            "None",
+                            on_click=lambda: _set_species_all(set()),
+                        ).props("flat dense").tooltip("Deselect all species")
+                        ui.button(
+                            "All",
+                            on_click=lambda: _set_species_all(set(all_species)),
+                        ).props("flat dense").tooltip("Select all species")
+                else:
+                    color = CLASS_COLORS["animal"]
+                    with ui.element("div").classes("flex items-center gap-1"):
+                        ui.element("div").style(
+                            f"width:12px;height:12px;background:{color};border-radius:2px;"
+                        )
+                        cb = ui.checkbox("animal", value=state.animal)
+                        cb.on_value_change(_tick("animal"))
+
+                for cls in ("person", "vehicle"):
                     color = CLASS_COLORS[cls]
                     with ui.element("div").classes("flex items-center gap-1"):
                         ui.element("div").style(
@@ -280,3 +409,10 @@ def render_gallery(container: ui.element, detections_path: Path) -> None:
                 ui.button("Next →", on_click=go_next).props("flat").set_enabled(state.page < pages - 1)
 
     rerender()
+
+    def current_filenames() -> set[str]:
+        """Basenames of images that pass the gallery's current filter.
+        Reflects live state — call at export time, not at render time."""
+        return {Path(item["file"]).name for item in apply_filter()}
+
+    return current_filenames

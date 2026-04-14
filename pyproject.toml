@@ -9,11 +9,20 @@ description = "Aerial wildlife detection pipeline for visual images"
 requires-python = ">=3.10"
 
 # Base dependencies — all environments need these.
-# PyTorch from pip is CPU-only. For GPU/MPS acceleration,
-# conda install pytorch torchvision -c pytorch  (before pip install)
+# PyTorch bounded to the 2.4.x–2.5.x line: these are the last releases with
+# official cu121 wheels, which match driver series 535.x (CUDA 12.2 ceiling).
+# Newer torch (2.7+) ships cu128 wheels that need driver ≥ 570.
+# For GPU/MPS acceleration, conda install pytorch torchvision -c pytorch
+# (before pip install), or select the right +cuXYZ wheel via --extra-index-url
+# in the environment YAML.
 dependencies = [
-    "torch",
-    "torchvision",
+    # setuptools provides `pkg_resources`, which SpeciesNet (and several
+    # transitively-imported TF-tooling packages) still import. Modern Python
+    # envs no longer ship it by default. Pin <81 to avoid Setuptools 81+'s
+    # deprecation warnings and eventual removal of the pkg_resources API.
+    "setuptools<81",
+    "torch>=2.4,<2.6",
+    "torchvision>=0.19,<0.21",
     "numpy",
     "pillow",
     "pandas",

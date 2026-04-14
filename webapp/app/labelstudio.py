@@ -30,7 +30,16 @@ def _webapp_to_md(detections: list[dict]) -> list[dict]:
                     "bbox": [x1 / w, y1 / h, (x2 - x1) / w, (y2 - y1) / h],
                 }
             )
-        out.append({"file": Path(item["file"]).name, "detections": dets})
+        # Forward width/height so upload_with_megadetector can skip the
+        # per-image PIL decode used by get_image_size().
+        out.append(
+            {
+                "file": Path(item["file"]).name,
+                "width": w,
+                "height": h,
+                "detections": dets,
+            }
+        )
     return out
 
 
@@ -59,12 +68,18 @@ def export_session(
     session_dir: Path,
     detections_path: Path,
     species_map: dict[str, str] | None = None,
+    file_allowlist: set[str] | None = None,
 ) -> str:
     """Create/reuse the LS project, upload session images + MD pre-annotations.
 
     If ``species_map`` is provided, animal boxes are labelled with the per-image
     species name instead of the generic 'animal', and the LS project config is
     populated with the full label set (species ∪ person ∪ vehicle).
+
+    If ``file_allowlist`` is provided, only images whose basename is in the
+    set are uploaded. Typically fed by the gallery's current filter so the
+    export reflects what the user sees on screen (e.g. occupied-only, or a
+    specific class).
     """
     from wildlife_detection.label_studio import (
         LabelStudioProject,
@@ -74,6 +89,9 @@ def export_session(
 
     http = make_session(token, url=ls_url)
     md_results = _webapp_to_md(json.loads(Path(detections_path).read_text()))
+
+    if file_allowlist is not None:
+        md_results = [r for r in md_results if r["file"] in file_allowlist]
 
     if species_map:
         labels = sorted(set(species_map.values()) | {"person", "vehicle"})

@@ -3,9 +3,12 @@ from __future__ import annotations
 
 from nicegui import app, ui
 
-from .config import HOST, PORT, UPLOADS_DIR, ensure_dirs
+from .config import HOST, PORT, THUMBS_DIR, UPLOADS_DIR, ensure_dirs
 from .job_manager import JobManager
+from .tabs import admin as admin_tab
+from .tabs import map_view as map_tab
 from .tabs import megadetector as md_tab
+from .tabs import series as series_tab
 from .tabs import speciesnet as snet_tab
 from .tabs import upload as upload_tab
 
@@ -18,6 +21,9 @@ def build_ui(jm: JobManager) -> None:
             t_up = ui.tab("Upload")
             t_md = ui.tab("MegaDetector")
             t_sn = ui.tab("MD + SpeciesNet")
+            t_se = ui.tab("Series")
+            t_mp = ui.tab("Map")
+            t_ad = ui.tab("Admin")
         with ui.tab_panels(tabs, value=t_up).classes("w-full"):
             with ui.tab_panel(t_up):
                 upload_tab.render()
@@ -25,12 +31,21 @@ def build_ui(jm: JobManager) -> None:
                 md_tab.render(jm)
             with ui.tab_panel(t_sn):
                 snet_tab.render(jm)
+            with ui.tab_panel(t_se):
+                series_tab.render()
+            with ui.tab_panel(t_mp):
+                map_tab.render()
+            with ui.tab_panel(t_ad):
+                admin_tab.render()
 
 
 def main() -> None:
     ensure_dirs()
-    # Serve uploaded images so the upload-tab thumbnail grid can display them.
+    # Serve uploaded images (full-res) and their derived JPEG thumbnails. The
+    # UI prefers /thumbs/ for grids and reserves /uploads/ for the full-res
+    # modal view.
     app.add_media_files("/uploads", UPLOADS_DIR)
+    app.add_media_files("/thumbs", THUMBS_DIR)
     jm = JobManager()
     jm.start()
     app.on_shutdown(jm.shutdown)
