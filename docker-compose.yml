@@ -1,24 +1,21 @@
-version: "3.9"
 
 services:
   fit-training:
     build:
       context: .
-      args:
-        user_id: "${UID:-1000}"
     volumes:
       - type: bind
         source: .
-        target: /home/student/course
+        target: /home/mambauser/course
       - type: volume
         source: week1_data
-        target: /home/student/course/week1/data
+        target: /home/mambauser/course/week1/data
       - type: bind
         source: "${HOME}/.docker_bash_history"
-        target: /home/student/.bash_history
+        target: /home/mambauser/.bash_history
       - type: bind
         source: "${HOME}/.gitconfig"
-        target: /home/student/.gitconfig
+        target: /home/mambauser/.gitconfig
         read_only: true
     ports:
       - "127.0.0.1:8888:8888"
@@ -27,17 +24,18 @@ services:
       # - WANDB_API_KEY=${WANDB_API_KEY}
       # - WANDB_PROJECT=${WANDB_PROJECT:-fit-course}
 
-  label-studio:
-    image: humansignal/label-studio:latest
-    ports:
-      - "127.0.0.1:8080:8080"
-    volumes:
-      - type: volume
-        source: label_studio_data
-        target: /label-studio/data
-    environment:
-      - LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true
-      - LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/data/media
+## TODO postponed for now
+#  label-studio:
+#    image: label-studio:latest
+#    ports:
+#      - "127.0.0.1:8080:8080"
+#    volumes:
+#      - type: volume
+#        source: label_studio_data
+#        target: /label-studio/data
+#    environment:
+#      - LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true
+#      - LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/data/media
 
 volumes:
   week1_data:

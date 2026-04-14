@@ -7,7 +7,8 @@ Python utilities for a two-week course on AI-assisted wildlife monitoring.
 **Key references:**
 - `README.md` — course overview, literature, case studies, learning objectives
 - `INSTALLATION_INSTRUCTIONS.md` — full day-by-day schedule, learning goals, deliberate skips
-
+- `doc/JUPYTERHUB_SETUP.md` — Jupyter Hub installation and usage guide for remote training sessions
+- 
 - doc/* — research documentation, dataset surveys, training strategy notes
 - src/wildlife_detection/ — Python package with tiling utilities, training scripts
 - .claude/skill - extensive notes for Claude Code on architecture, design patterns, and coding conventions
