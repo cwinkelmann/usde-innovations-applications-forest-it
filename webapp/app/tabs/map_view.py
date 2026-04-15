@@ -9,6 +9,7 @@ species. Sqrt scaling is used so circle *area* tracks count linearly
 """
 from __future__ import annotations
 
+import json
 from html import escape
 from math import sqrt
 
@@ -249,6 +250,12 @@ def render() -> None:
                     "w-full h-[600px]"
                 )
 
+                # Two-pass setup: create all layers first, then bind popups
+                # in one client-side sweep via L.Map.eachLayer. The per-layer
+                # `layer.run_method('bindPopup', ...)` path occasionally
+                # didn't produce a clickable popup; iterating from the map
+                # side bypasses that and uses Leaflet's API directly.
+                popups: dict[str, str] = {}
                 for rec, matched in zip(geo, trap_counts):
                     radius = _radius_for(matched)
                     color = _COLOR_ACTIVE if matched > 0 else _COLOR_DIM
@@ -263,8 +270,40 @@ def render() -> None:
                         name="circleMarker",
                         args=[[rec["lat"], rec["lng"]], options],
                     )
-                    layer.run_method(
-                        "bindPopup", _popup_html(rec, matched, selected)
+                    popups[layer.id] = _popup_html(rec, matched, selected)
+
+                # Bind popups via client-side JS. NiceGUI's Layer.run_method
+                # ('bindPopup', ...) and run_map_method routes silently no-op
+                # in our setup (probably timing — leaflet mounts when its
+                # tab becomes visible, after the initial render queue has
+                # drained). Going direct via ui.run_javascript + a small
+                # retry loop in JS itself makes this resilient to tab
+                # activation timing without needing Python-side timers.
+                if popups:
+                    popups_json = json.dumps(popups)
+                    map_id = lmap.id
+                    expected = len(popups)
+                    js = (
+                        "(function() {"
+                        "  let attempts = 0;"
+                        "  function tryBind() {"
+                        f"    const el = window.getElement({map_id});"
+                        "    if (el && el.map) {"
+                        f"      const m = {popups_json};"
+                        "      let bound = 0;"
+                        "      el.map.eachLayer(function(layer) {"
+                        "        if (layer && layer.id && m[layer.id]) {"
+                        "          layer.bindPopup(m[layer.id]);"
+                        "          bound++;"
+                        "        }"
+                        "      });"
+                        f"      if (bound >= {expected}) return;"  # all bound
+                        "    }"
+                        "    if (++attempts < 60) setTimeout(tryBind, 200);"
+                        "  }"
+                        "  tryBind();"
+                        "})();"
                     )
+                    ui.run_javascript(js)
 
         _rebuild()

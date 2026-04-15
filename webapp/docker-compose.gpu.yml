@@ -16,6 +16,13 @@ services:
       resources:
         reservations:
           devices:
+            # Pin to physical GPUs 6 and 7 on the shared server. Other GPUs
+            # are typically loaded with external workloads, which caused
+            # the scheduler to keep piling jobs onto cuda:0. Inside the
+            # container these appear as cuda:0 (→ phys. 6) and cuda:1
+            # (→ phys. 7); the worker pool auto-sizes to 2 via
+            # torch.cuda.device_count(). Swap to `count: all` or widen
+            # `device_ids` once the server has free capacity.
             - driver: nvidia
-              count: all
+              device_ids: ['6', '7']
               capabilities: [gpu]

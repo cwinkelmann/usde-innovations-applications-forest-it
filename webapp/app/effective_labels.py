@@ -1,11 +1,14 @@
 """One-stop "what species is in this image" resolver.
 
-Reconciles three sources of per-image labels with this precedence:
+Reconciles four sources of per-image labels with this precedence:
 
   1. **Label Studio export** (highest) — biologist-corrected annotations,
      loaded from ``labelstudio_speciesnet_export.json`` / ``labelstudio_export.json``.
   2. **Series tab user labels** — manual assignments from ``user_labels.json``.
-  3. **SpeciesNet top-1** — model fallback from ``md_speciesnet/predictions.json``.
+  3. **Lissl ground-truth wolf labels** — only the *positive* "wolf" rows
+     from ``lissl_labels.json``. The "no_wolf" rows are uninformative for
+     species (they say what the image *isn't*) and are ignored here.
+  4. **SpeciesNet top-1** — model fallback from ``md_speciesnet/predictions.json``.
 
 Higher-priority sources overwrite lower-priority ones on a per-filename basis.
 Any consumer that wants the "current best label" should call
@@ -19,6 +22,7 @@ from collections import Counter
 from pathlib import Path
 
 from .config import OUTPUTS_DIR
+from .lissl_groundtruth import load_session_labels as _load_lissl_labels
 from .user_labels import load_labels
 
 # LS prefixes uploaded files as ``<8+ hex chars>-<original_name>``. Strip
@@ -100,13 +104,24 @@ def _ls_labels(session: str) -> dict[str, str]:
     return out
 
 
+def _lissl_wolf_labels(session: str) -> dict[str, str]:
+    """Only the ``wolf`` side of Lissl's binary ground truth — ``no_wolf``
+    is uninformative for species and is intentionally dropped here."""
+    return {
+        fn: lbl
+        for fn, lbl in _load_lissl_labels(session).items()
+        if lbl == "wolf"
+    }
+
+
 def effective_labels(session: str) -> dict[str, str]:
     """Return ``{basename: species}`` for every image with a label,
     applying the priority chain described in the module docstring.
     """
     merged = _speciesnet_labels(session)
-    merged.update(load_labels(session))   # user_labels overrides model
-    merged.update(_ls_labels(session))    # LS export overrides everything
+    merged.update(_lissl_wolf_labels(session))  # GT wolf overrides model
+    merged.update(load_labels(session))         # user_labels overrides GT
+    merged.update(_ls_labels(session))          # LS export overrides all
     return merged
 
 

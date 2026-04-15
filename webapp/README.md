@@ -87,4 +87,3 @@ root account; trying to further drop privileges *inside* the container just
 breaks the bind-mount. If you're running rootful Docker in production and
 want non-root, pass `--user $(id -u):$(id -g)` to compose.
 
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6ODA4MzM3Mzk3MCwiaWF0IjoxNzc2MTczOTcwLCJqdGkiOiJiN2UwNzNiMmEzMDk0NWE3OTFjNGFmZmQzMzg4NjZiYyIsInVzZXJfaWQiOiIxIn0.fadrgVhR9AqdJf0My-l0wYIhHaqLTn8TDIBm0QYidJQ

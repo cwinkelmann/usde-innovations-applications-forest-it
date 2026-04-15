@@ -30,14 +30,31 @@ RUN apt-get update \
 
 WORKDIR /app
 
+# Layer cache strategy:
+# 1. COPY only metadata + a stub src/ (just enough for `pip install -e .`
+#    in the env file to resolve the package layout).
+# 2. micromamba create — heavy, ~5 min, cached on every subsequent build
+#    where pyproject.toml + environment-webapp.yml are unchanged.
+# 3. COPY the real src + webapp/app on top — these are the layers that
+#    invalidate on each code edit, but they're milliseconds.
+# The stub is overwritten by the real src in step 3; the editable install's
+# .pth still points at /app/src/wildlife_detection so imports just work.
 COPY pyproject.toml /app/pyproject.toml
-COPY src /app/src
 COPY webapp/environment-webapp.yml /app/environment-webapp.yml
+
+# Empty package stub: setuptools.find_packages(where=["src"]) walks this
+# directory at install time. An empty __init__.py is enough for the
+# editable install to register the package.
+RUN mkdir -p /app/src/wildlife_detection \
+ && touch /app/src/wildlife_detection/__init__.py
 
 # Build the env as root. micromamba's entrypoint reads ENV_NAME to activate.
 RUN micromamba create -y -n fit-webapp -f /app/environment-webapp.yml \
     && micromamba clean --all --yes
 
+# Real source — overlays the stub. No reinstall needed; the editable
+# .pth from the previous step already points here.
+COPY src /app/src
 COPY webapp/app /app/webapp/app
 
 

@@ -16,10 +16,26 @@ OUTPUTS_DIR = DATA_DIR / "outputs"
 MODEL_CACHE_DIR = DATA_DIR / "model_cache"
 # Derived JPEG thumbnails mirror the uploads tree; safe to delete & regenerate.
 THUMBS_DIR = DATA_DIR / "thumbs"
+# Optional ground-truth CSVs (Lissl's wolf/no-wolf labels keyed by SHA-256).
+# Used by the Evaluation tab and by effective_labels to override model
+# predictions where ground truth exists.
+LISSL_DIR = Path(os.environ.get("LISSL_DIR", str(DATA_DIR / "lissl_occurances")))
 
 MD_WEIGHTS = os.environ.get("MD_WEIGHTS", "md_v1000.0.0-larch.pt")
 SPECIESNET_MODEL = os.environ.get(
     "SPECIESNET_MODEL", "kaggle:google/speciesnet/pyTorch/v4.0.2a/1"
+)
+# DeepFaune ViT-L weights (~1.1 GB). Auto-downloaded from PBIL Lyon on
+# first run into MODEL_CACHE_DIR/deepfaune/. Override DEEPFAUNE_URL if
+# the PBIL mirror moves or you have a local mirror.
+DEEPFAUNE_WEIGHTS = os.environ.get(
+    "DEEPFAUNE_WEIGHTS",
+    "deepfaune-vit_large_patch14_dinov2.lvd142m.v3.pt",
+)
+DEEPFAUNE_URL = os.environ.get(
+    "DEEPFAUNE_URL",
+    "https://pbil.univ-lyon1.fr/software/download/deepfaune/v1.3/"
+    "deepfaune-vit_large_patch14_dinov2.lvd142m.v3.pt",
 )
 
 HOST = os.environ.get("HOST", "0.0.0.0")
@@ -88,5 +104,11 @@ def resolve_batch_size(device: str | None = None) -> int:
 
 
 def ensure_dirs() -> None:
-    for d in (UPLOADS_DIR, OUTPUTS_DIR, MODEL_CACHE_DIR, THUMBS_DIR):
+    for d in (
+        UPLOADS_DIR,
+        OUTPUTS_DIR,
+        MODEL_CACHE_DIR,
+        THUMBS_DIR,
+        DATA_DIR / "tus",  # resumable upload temp store
+    ):
         d.mkdir(parents=True, exist_ok=True)
