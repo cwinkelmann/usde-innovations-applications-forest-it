@@ -19,18 +19,26 @@ def test_import_speciesnet_module() -> None:
             "width": 100,
             "height": 200,
             "detections": [{"category_id": 0, "label": "animal", "conf": 0.9, "bbox_xyxy": [10, 20, 50, 120]}],
-        }
+        },
+        {
+            "file": "/tmp/b.jpg",
+            "width": 100,
+            "height": 200,
+            "detections": [{"category_id": 1, "label": "person", "conf": 0.8, "bbox_xyxy": [0, 0, 10, 10]}],
+        },
     ]
-    formatted = s.SpeciesNetClassifier._md_to_speciesnet_format(md_results)
-    det = formatted["/tmp/a.jpg"]["detections"][0]
+    filepaths, detections = s.SpeciesNetClassifier._build_inputs(md_results)
+    # Images without an animal box are not sent to SpeciesNet.
+    assert filepaths == ["/tmp/a.jpg"]
+    det = detections["/tmp/a.jpg"]["detections"][0]
     assert det["category"] == "1"
     assert det["bbox"] == [0.1, 0.1, 0.4, 0.5]
 
 
 def test_parse_taxonomy() -> None:
-    from webapp.app.detectors.speciesnet import SpeciesNetClassifier
+    from webapp.app.detectors.speciesnet import _parse_taxonomy
 
-    parsed = SpeciesNetClassifier._parse_taxonomy("mammalia;carnivora;felidae;panthera;panthera_leo;lion")
+    parsed = _parse_taxonomy("mammalia;carnivora;felidae;panthera;panthera_leo;lion")
     assert parsed["common_name"] == "lion"
     assert parsed["species"] == "panthera_leo"
 
