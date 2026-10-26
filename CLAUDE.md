@@ -90,6 +90,9 @@ Each notebook must run top-to-bottom without errors in its designated conda envi
 | 3-phase fine-tuning | `src/wildlife_detection/training/phased_finetune.py` | done |
 | Eikelboom evaluation | `src/wildlife_detection/training/eval_eikelboom.py` | done |
 | Pipeline walkthrough notebook | `notebooks/01_pipeline_walkthrough.ipynb` | done |
+| Crown-decline webapp tab | `webapp/app/tabs/crown_decline.py` | done |
+| Crown-decline detector (animaloc) | `webapp/app/detectors/crown_decline.py` | done |
+| Tile-block index + prediction cache | `webapp/app/crown_tiles.py` | done |
 | Unit tests | `tests/` | done |
 | `Course_layout.md` | root | done |
 | Setup instructions | `INSTALLATION_INSTRUCTIONS.md` | partial |
@@ -108,6 +111,7 @@ in `scripts/training/` — see `scripts/CLAUDE.md` for details.
 | `output/eikelboom_rtdetr_tiled/` | RT-DETR v2 trained on Eikelboom tiles (Transformers format) |
 | `output/mdv6_finetune_test/` | MDV6 RT-DETR fine-tuning test run |
 | `weights/md_v1000.0.0-larch.pt` | MegaDetector v1000 larch (YOLO11L, MIT license) |
+| `webapp/_data/model_cache/crown_decline/` | HerdNet crown-decline checkpoint (`schleppzig_convnextv2_1class_ep30.pth`, CamouflageHerdNetConvNeXtV2, val F1 0.69 / test F1 0.49 on the Schleppzig DOP20cir pointset). Needs `animaloc` (HerdNet fork) to load — see `webapp/README.md`. |
 | `wandb/` | WandB run logs from March 18, 2026 — 4 runs: sorrel (no freeze), sorrel (freeze=10), larch (freeze=10), rtdetr (freeze=10) |
 
 ### Research documentation

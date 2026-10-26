@@ -8,6 +8,11 @@ import traceback
 from pathlib import Path
 
 from .config import (
+    CROWN_BACKBONE_SIZE,
+    CROWN_CACHE_DIR,
+    CROWN_DECLINE_WEIGHTS,
+    CROWN_DOWN_RATIO,
+    CROWN_NUM_CLASSES,
     DEEPFAUNE_URL,
     DEEPFAUNE_WEIGHTS,
     MD_WEIGHTS,
@@ -61,6 +66,7 @@ def worker_main(gpu_idx: int, device: str, job_queue, status_queue) -> None:
     snet = None  # lazy-loaded on first md+speciesnet job
     dfaune = None  # lazy-loaded on first md+deepfaune job
     csnet = None  # canonical SpeciesNet (full pipeline); lazy on first "speciesnet" job
+    crown = None  # crown-decline HerdNet; lazy on first "crown_decline" job
 
     def _release_accelerator_memory() -> None:
         # Return allocator-cached (but unused) blocks to the driver so
@@ -100,6 +106,72 @@ def worker_main(gpu_idx: int, device: str, job_queue, status_queue) -> None:
                 progress=0.0,
                 worker=f"{device}:{gpu_idx}" if device == "cuda" else device,
             )
+            # ── Crown decline branch ─────────────────────────────────────
+            # Geospatial mode: runs over a fixed GeoTIFF tile block instead of
+            # an upload session, so it never touches UPLOADS_DIR. One cached
+            # JSON (+ overlay PNG) per tile means re-opening the tab with the
+            # same settings is instant and a cancelled run keeps its progress.
+            if job["mode"] == "crown_decline":
+                from .crown_tiles import (
+                    PredictionCache,
+                    read_tile_info,
+                    render_preview,
+                )
+
+                if crown is None:
+                    from .detectors.crown_decline import CrownDeclineDetector
+
+                    crown = CrownDeclineDetector(
+                        CROWN_DECLINE_WEIGHTS,
+                        device=device,
+                        down_ratio=CROWN_DOWN_RATIO,
+                        backbone_size=CROWN_BACKBONE_SIZE,
+                        num_classes=CROWN_NUM_CLASSES,
+                    )
+
+                params = dict(job["params"])
+                cache = PredictionCache(CROWN_CACHE_DIR, job["cache_key"], params)
+                tile_paths = [Path(p) for p in job["tiles"]]
+                total = len(tile_paths)
+                detections = 0
+                for done, tp in enumerate(tile_paths, start=1):
+                    rec = crown.predict_tile(tp, **params)
+                    cache.save(tp.stem, rec)
+                    detections += rec["count"]
+                    if job.get("preview", True):
+                        try:
+                            render_preview(
+                                read_tile_info(tp),
+                                rec["points"],
+                                cache.preview_for(tp.stem),
+                            )
+                        except Exception:  # noqa: BLE001
+                            # A preview is a convenience. Never lose a tile's
+                            # predictions because PIL choked on rendering it.
+                            pass
+                    _set_status(
+                        status_queue,
+                        job_id,
+                        stage="Crown decline",
+                        processed=done,
+                        total=total,
+                        detections=detections,
+                        progress=done / max(1, total),
+                    )
+                _set_status(
+                    status_queue,
+                    job_id,
+                    state="done",
+                    progress=1.0,
+                    result={
+                        "mode": "crown_decline",
+                        "num_tiles": total,
+                        "detections": detections,
+                        "out_dir": str(cache.dir),
+                    },
+                )
+                continue
+
             session_dir = UPLOADS_DIR / job["session"]
             images = _list_images(session_dir)
             if not images:
