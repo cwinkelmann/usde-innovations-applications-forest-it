@@ -205,3 +205,16 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Webapp runtime data: uploads, thumbnails, job outputs, prediction caches and
+# model checkpoints. Several GB (a single HerdNet checkpoint is ~420 MB), all
+# of it reproducible or user-supplied, so none of it belongs in git history.
+# Listed per directory rather than as webapp/_data/ so that reference data the
+# app ships with -- webapp/_data/lissl_occurances/ -- stays tracked.
+webapp/_data/uploads/
+webapp/_data/downloads/
+webapp/_data/thumbs/
+webapp/_data/tus/
+webapp/_data/outputs/
+webapp/_data/model_cache/
+webapp/_data/max_tables/

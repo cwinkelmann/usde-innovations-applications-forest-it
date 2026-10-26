@@ -5,8 +5,51 @@ Minimal NiceGUI app with three tabs:
 1. **Upload** — drop images into a named session folder under `/data/uploads/<session>/`.
 2. **MegaDetector** — run MD v1000 on a session; gallery + filters + stats; Label Studio export/import with precision / recall / F1 evaluation; visual FP/FN diff; JSON / CSV / per-image CSV / per-class zip downloads.
 3. **MD + SpeciesNet** — detect, then classify each animal; LS export with species pre-annotations; same downloads.
+4. **Crown decline** — run the HerdNet crown-decline detector over a GeoTIFF
+   tile block and map the results (see below).
 
 All state persists on the bind mount (`HOST_DATA_DIR` → `/data`).
+
+## Crown decline tab
+
+Applies the HerdNet point detector trained on the Schleppzig (Spreewald)
+DOP20cir block to whole orthophoto tiles and shows the detections on a map.
+
+It is the one tab that does **not** work on an upload session: the imagery is
+a fixed *tile block* pulled by MapTilesDownloader
+(`<block>/tiles/c###_r###.tif`, 4096 px, 0.2 m, EPSG:25833, bands NIR/Red/Green),
+shared by everyone, so predictions are cached on disk instead.
+
+**Caching.** A run is keyed by the model weights (path, size, mtime) plus every
+inference parameter, hashed into a short cache id. Results land in
+`/data/outputs/crown_decline/<key>/<tile>.json`, with an overlay PNG beside
+each one. "Run missing tiles" processes only what that key does not have yet,
+so re-opening the tab is instant and an interrupted run resumes where it
+stopped. Change a threshold and you get a new key — the old results stay.
+
+**Extra dependency.** This tab needs `animaloc` (the HerdNet fork), which is
+*not* part of the course environment and not on PyPI:
+
+```bash
+pip install -e /path/to/HerdNet        # or:
+export HERDNET_REPO=/path/to/HerdNet   # added to sys.path at import time
+```
+
+Without it the app still starts and every other tab works; this tab reports
+the missing dependency.
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `CROWN_TILES_DIR` | `/data/tile_blocks/schleppzig_dop20cir` | Tile block to read (the directory holding `tiles/`) |
+| `CROWN_DECLINE_WEIGHTS` | `/data/model_cache/crown_decline/schleppzig_convnextv2_1class_ep30.pth` | Trained checkpoint |
+| `CROWN_CACHE_DIR` | `/data/outputs/crown_decline` | Prediction cache root |
+| `HERDNET_REPO` | — | Path to a HerdNet checkout, if `animaloc` is not installed |
+
+**A caveat worth repeating to students.** The model was validated on 512 px
+crops, where `adapt_ts` is relative to the peak of that crop's heatmap. Run
+over a whole 4096 px tile, the peak is taken over 64× more area, so 0.20 here
+is not exactly the operating point that scored F1 0.69 on validation. Treat
+the counts as indicative and re-check the threshold on tiles you know.
 
 ## Rootless Docker
 

@@ -38,6 +38,29 @@ DEEPFAUNE_URL = os.environ.get(
     "deepfaune-vit_large_patch14_dinov2.lvd142m.v3.pt",
 )
 
+# ── Crown decline (HerdNet point detection on CIR orthophoto tiles) ──────────
+# Unlike the camera-trap detectors, this one reads a fixed *tile block* pulled
+# by MapTilesDownloader (``<block>/tiles/c###_r###.tif``) rather than an upload
+# session, so its imagery path and prediction cache are configured globally.
+CROWN_TILES_DIR = Path(
+    os.environ.get(
+        "CROWN_TILES_DIR", str(DATA_DIR / "tile_blocks" / "schleppzig_dop20cir")
+    )
+)
+CROWN_DECLINE_WEIGHTS = Path(
+    os.environ.get(
+        "CROWN_DECLINE_WEIGHTS",
+        str(MODEL_CACHE_DIR / "crown_decline" / "schleppzig_convnextv2_1class_ep30.pth"),
+    )
+)
+# Predictions are cached per (weights, params) under here, one JSON per tile.
+CROWN_CACHE_DIR = Path(os.environ.get("CROWN_CACHE_DIR", str(OUTPUTS_DIR / "crown_decline")))
+# Architecture of the checkpoint above. Not UI knobs: changing one without
+# changing the weights simply fails to load.
+CROWN_DOWN_RATIO = int(os.environ.get("CROWN_DOWN_RATIO", "4"))
+CROWN_BACKBONE_SIZE = os.environ.get("CROWN_BACKBONE_SIZE", "tiny")
+CROWN_NUM_CLASSES = int(os.environ.get("CROWN_NUM_CLASSES", "2"))
+
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8080"))
 
@@ -110,5 +133,6 @@ def ensure_dirs() -> None:
         MODEL_CACHE_DIR,
         THUMBS_DIR,
         DATA_DIR / "tus",  # resumable upload temp store
+        CROWN_CACHE_DIR,
     ):
         d.mkdir(parents=True, exist_ok=True)

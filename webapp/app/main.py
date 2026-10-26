@@ -3,9 +3,17 @@ from __future__ import annotations
 
 from nicegui import app, ui
 
-from .config import HOST, PORT, THUMBS_DIR, UPLOADS_DIR, ensure_dirs
+from .config import (
+    CROWN_CACHE_DIR,
+    HOST,
+    PORT,
+    THUMBS_DIR,
+    UPLOADS_DIR,
+    ensure_dirs,
+)
 from .job_manager import JobManager
 from .tabs import admin as admin_tab
+from .tabs import crown_decline as crown_tab
 from .tabs import deepfaune as df_tab
 from .tabs import evaluation as eval_tab
 from .tabs import map_view as map_tab
@@ -28,6 +36,7 @@ def build_ui(jm: JobManager) -> None:
             t_df = ui.tab("MD + DeepFaune")
             t_se = ui.tab("Series")
             t_mp = ui.tab("Map")
+            t_cd = ui.tab("Crown decline")
             t_ev = ui.tab("Evaluation")
             t_ad = ui.tab("Admin")
         with ui.tab_panels(tabs, value=t_up).classes("w-full"):
@@ -45,6 +54,8 @@ def build_ui(jm: JobManager) -> None:
                 series_tab.render()
             with ui.tab_panel(t_mp):
                 map_tab.render()
+            with ui.tab_panel(t_cd):
+                crown_tab.render(jm)
             with ui.tab_panel(t_ev):
                 eval_tab.render()
             with ui.tab_panel(t_ad):
@@ -86,6 +97,10 @@ def main() -> None:
     # modal view.
     app.add_media_files("/uploads", UPLOADS_DIR)
     app.add_media_files("/thumbs", THUMBS_DIR)
+    # Crown-decline overlay PNGs, one per tile per parameter set. The
+    # cache key is part of the URL path, so a parameter change can never
+    # surface a stale overlay from an earlier run.
+    app.add_media_files("/crown", CROWN_CACHE_DIR)
     jm = JobManager()
     jm.start()
     app.on_shutdown(jm.shutdown)
